@@ -4,7 +4,7 @@ class Thesaurus:
         self.name = name
 
     def get_by_id(self, term_id):
-        return self.terms.get(term_id, None)
+        return self.terms.get(term_id)
 
     def add_term(self, term):
         self.terms[term.get_id()] = term

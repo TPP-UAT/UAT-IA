@@ -4,7 +4,7 @@ class Term:
         self.name = ""
         self.children = []
         self.parents = []
-        self.alt_labels = []
+        self.alt_names = []
 
     # Getters
     def get_id(self):
@@ -16,11 +16,21 @@ class Term:
     def get_parents(self):
         return self.parents
 
+    def get_name(self):
+        return self.name
+
     # Setters
-    def set_attributes(self, name, children, parents, alt_labels):
+    def set_name(self, name):
         self.name = name
-        self.children = children
+
+    def set_parents(self, parents):
         self.parents = parents
+
+    def set_children(self, children):
+        self.children = children
+
+    def set_alt_names(self, alt_names):
+        self.alt_names = alt_names
 
     def get_by_id(self, id):
         if self.id == id:
