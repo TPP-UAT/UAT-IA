@@ -2,7 +2,6 @@ import json
 from Thesaurus import Thesaurus
 from Term import Term
 
-
 class UATMapper:
     def __init__(self, file_name):
         self.file_name = file_name
@@ -44,4 +43,4 @@ class UATMapper:
             term = self.map_json_to_term(key, obj)
             thesaurus.add_term(term)
 
-        print(thesaurus.get_by_id('0').get_name())
+        return thesaurus
