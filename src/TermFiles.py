@@ -1,8 +1,8 @@
 class TermFiles:
-    def __init__(self, id, files, children):
+    def __init__(self, id):
         self.id = id
-        self.files = files
-        self.children = children
+        self.files = []
+        self.children = []
 
     # Getters
     def get_id(self):
@@ -13,3 +13,9 @@ class TermFiles:
 
     def get_children(self):
         return self.children
+    
+    def add_file(self, file):
+        self.files.append(file)
+
+    def add_children(self, children):
+        self.children = children

@@ -1,7 +1,27 @@
 {
-  "947": {
-    "files": [
-      "lunar_atmosphere.txt"
-    ]
-  }
+  "files": [
+    "file_1.json",
+    "file_2.json",
+    "file_3.json",
+    "file_4.json",
+    "file_5.json",
+    "file_6.json",
+    "file_7.json",
+    "file_8.json",
+    "file_9.json",
+    "file_10.json",
+    "file_11.json",
+    "file_12.json",
+    "file_13.json",
+    "file_14.json",
+    "file_15.json",
+    "file_16.json",
+    "file_17.json",
+    "file_18.json",
+    "file_19.json",
+    "file_20.json",
+    "file_21.json",
+    "file_22.json",
+    "file_23.json"
+  ]
 }

@@ -5,6 +5,7 @@ from Term import Term
 class UATMapper:
     def __init__(self, file_name):
         self.file_name = file_name
+        
     def map_json_id_to_term_id(self, json_key):
         return json_key.split("/")[-1]
 

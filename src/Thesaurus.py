@@ -3,6 +3,7 @@ class Thesaurus:
         self.terms = {}
         self.name = name
 
+    # Getters
     def get_by_id(self, term_id):
         return self.terms.get(term_id, None)
 
@@ -20,6 +21,9 @@ class Thesaurus:
         for term in self.terms:
             if name == term.get_name():
                 return term
+            
+    def get_terms(self):
+        return self.terms
 
     def print_names_and_ids(self):
         for term_key, term_value in self.terms.items():
