@@ -17,13 +17,13 @@ class Thesaurus:
     def get_size(self):
         return len(self.terms)
 
+    def get_terms(self):
+        return self.terms
+
     def get_by_name(self, name):
         for term in self.terms:
             if name == term.get_name():
                 return term
-            
-    def get_terms(self):
-        return self.terms
 
     def print_names_and_ids(self):
         for term_key, term_value in self.terms.items():
