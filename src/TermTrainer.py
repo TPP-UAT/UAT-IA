@@ -1,4 +1,12 @@
 import json
+import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Embedding, LSTM, Dense, Flatten, Dropout, BatchNormalization
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.regularizers import l2
+from sklearn.model_selection import train_test_split
+import numpy as np
 
 class TermTrainer:
     def __init__(self, training_files):
@@ -39,9 +47,54 @@ class TermTrainer:
                     files_input[file_path] = [0] * len(group_of_term_files)
                 files_input[file_path][keywords_indexes[term_files]] = 1
 
-        return self.create_input_arrays(files_input)
+        texts, keywords_by_text = self.create_input_arrays(files_input)
+        return texts, keywords_by_text, keywords_indexes
+
+    def generate_model_for_group_of_terms(self, texts, keywords_by_text, keywords_indexes):
+        # Tokenización
+        tokenizer = Tokenizer()
+        tokenizer.fit_on_texts(texts)
+        sequences = tokenizer.texts_to_sequences(texts)
+
+        # Convertir secuencias a vectores de longitud fija (rellenando con ceros si es necesario)
+        max_sequence_length = 12
+        sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
+
+        train_data, test_data, train_labels, test_labels = train_test_split(sequences_padded, keywords_by_text, test_size=0.2,
+                                                                            random_state=42)
+        # Conversión de datos
+        train_labels = np.array(train_labels)
+        test_labels = np.array(test_labels)
+
+        # Construir el modelo de la red neuronal
+        vocab_size = len(tokenizer.word_index) + 1
+        embedding_dim = 128
+
+        model = Sequential()
+        model.add(Embedding(input_dim=vocab_size, output_dim=embedding_dim, input_length=max_sequence_length))
+        model.add(LSTM(128, return_sequences=True))
+        model.add(LSTM(32))
+        model.add(Dense(64, activation='relu'))
+        model.add(BatchNormalization())
+        model.add(Dropout(0.5))
+        model.add(Dense(4, activation='sigmoid'))  # Salida multi-etiqueta
+
+        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+
+        # Entrenar el modelo
+        epochs = 50
+        batch_size = 8
+        model.fit(train_data, train_labels, epochs=epochs, batch_size=batch_size,
+                  validation_data=(test_data, test_labels))
+
+        # Evaluar el modelo
+        loss, accuracy = model.evaluate(test_data, test_labels)
+        print("Loss:", loss)
+        print("Accuracy:", accuracy)
 
     def train_group(self, group_of_term_files):
-        texts, keywords_by_text = self.create_data_input(group_of_term_files)
+        texts, keywords_by_text, keywords_indexes = self.create_data_input(group_of_term_files)
+        self.generate_model_for_group_of_terms(texts, keywords_by_text, keywords_indexes)
         print("Texts: ", texts)
         print("Keywords by text: ", keywords_by_text)
