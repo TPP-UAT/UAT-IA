@@ -1,8 +1,13 @@
 class TermFiles:
-    def __init__(self, id):
+    def __init__(self, id, files_paths=None, children=None):
+        if children is None:
+            children = []
+        if files_paths is None:
+            files_paths = []
+
         self.id = id
-        self.files_paths = []
-        self.children = []
+        self.files_paths = files_paths
+        self.children = children
 
     # Getters
     def get_id(self):

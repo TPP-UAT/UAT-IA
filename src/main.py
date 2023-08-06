@@ -14,20 +14,19 @@ if __name__ == '__main__':
     training_files = term_file_mapper.get_training_files()
     term_files = training_files.get_term_files()
 
+
+    '''
+    # Print term file full object
     for key, term_file in term_files.items():
         print(key, term_file.get_files_paths(), term_file.get_children())
+    '''
 
-
-    print("Training files Size: ", training_files.get_size())
-    print("Thesaurus Size: ", branch_tesaurus.get_size())
-
-    children = branch_tesaurus.get_by_id('975').get_children()
+    # Children del tesauro [954, 958, 962, 967]
+    children = branch_tesaurus.get_by_id('974').get_children()
     group_of_term_files = []
-    for child in children:
-        term_file = training_files.get_by_id(child)
+    for child_id in children:
+        term_file = training_files.get_term_file_with_children_files(child_id)
         group_of_term_files.append(term_file)
 
     term_trainer = TermTrainer(training_files)
     term_trainer.train_group(group_of_term_files)
-
-
