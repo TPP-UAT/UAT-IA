@@ -1,15 +1,16 @@
 from UATMapper import UATMapper
 from TermFileMapper import TermFileMapper
 from TermTrainer import TermTrainer
+from TermPrediction import TermPrediction
 
 if __name__ == '__main__':
     mapper = UATMapper("./data/UAT.json")
     thesaurus = mapper.map_to_thesaurus()
 
-    branch_tesaurus = thesaurus.get_branch('972')
+    branch_thesaurus = thesaurus.get_branch('972')
 
     term_file_mapper = TermFileMapper()
-    term_file_mapper.create_training_files(branch_tesaurus)
+    term_file_mapper.create_training_files(branch_thesaurus)
 
     training_files = term_file_mapper.get_training_files()
     term_files = training_files.get_term_files()
@@ -21,12 +22,25 @@ if __name__ == '__main__':
         print(key, term_file.get_files_paths(), term_file.get_children())
     '''
 
-    # Children del tesauro [954, 958, 962, 967]
-    children = branch_tesaurus.get_by_id('974').get_children()
-    group_of_term_files = []
-    for child_id in children:
-        term_file = training_files.get_term_file_with_children_files(child_id)
-        group_of_term_files.append(term_file)
-
+    term_id = '974'
     term_trainer = TermTrainer(training_files)
-    term_trainer.train_group(group_of_term_files)
+    term_trainer.train_model_by_thesaurus(branch_thesaurus, term_id)
+
+    trained_models = term_trainer.get_trained_models()
+    keywords_by_term = term_trainer.get_keywords_by_term()
+
+    term_predicton = TermPrediction(trained_models, keywords_by_term)
+    texts = ["t c. 820 km in diameter, the Smythii impact basin is one of the large lunar basins (>200 km diameter) thought to have formed during the pre-Nectarian period."]
+
+    predicted_ids = []
+    predictions_ids = term_predicton.predict_texts(texts, term_id, predicted_ids)
+    print("predictions_ids", predictions_ids)
+
+    # TODO: Agregar term_name a termFile
+    predicted_keywords = []
+    for prediction_ids in predictions_ids:
+        keywords_by_text = []
+        for id in prediction_ids:
+            keywords_by_text.append(branch_thesaurus.get_by_id(id).get_name())
+        predicted_keywords.append(keywords_by_text)
+    print(predicted_keywords)
