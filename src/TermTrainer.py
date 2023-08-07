@@ -110,19 +110,13 @@ class TermTrainer:
 
     def train_group(self, term_id, group_of_term_files):
         texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files)
-        print("texts", texts)
-        print("keywords_by_text", keywords_by_text)
-        print("keywords_indexes", keywords_indexes)
 
         model = self.generate_model_for_group_of_terms(texts, keywords_by_text, keywords_indexes)
-        print("Texts: ", texts)
-        print("Keywords by text: ", keywords_by_text)
 
         self.trained_models.add_model_for_term_children(term_id, model)
 
     def train_model_by_thesaurus(self, thesaurus, term_id):
         children = thesaurus.get_by_id(term_id).get_children()
-        print("term_id", term_id, " children", children)
         if not children:
             return
         group_of_term_files = []

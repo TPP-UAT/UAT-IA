@@ -34,7 +34,6 @@ if __name__ == '__main__':
 
     predicted_ids = []
     predictions_ids = term_predicton.predict_texts(texts, term_id, predicted_ids)
-    print("predictions_ids", predictions_ids)
 
     # TODO: Agregar term_name a termFile
     predicted_keywords = []
@@ -43,4 +42,4 @@ if __name__ == '__main__':
         for id in prediction_ids:
             keywords_by_text.append(branch_thesaurus.get_by_id(id).get_name())
         predicted_keywords.append(keywords_by_text)
-    print(predicted_keywords)
+    print("Predicciones: ", predicted_keywords)
