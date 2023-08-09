@@ -2,6 +2,8 @@ from UATMapper import UATMapper
 from TermFileMapper import TermFileMapper
 from TermTrainer import TermTrainer
 from TermPrediction import TermPrediction
+from NormalInputCreator import NormalInputCreator
+from TFIDFInputCreator import TFIDFInputCreator
 
 if __name__ == '__main__':
     mapper = UATMapper("./data/UAT.json")
@@ -24,7 +26,7 @@ if __name__ == '__main__':
 
     term_id = '974'
     term_trainer = TermTrainer(training_files)
-    term_trainer.train_model_by_thesaurus(branch_thesaurus, term_id)
+    term_trainer.train_model_by_thesaurus(branch_thesaurus, term_id, TFIDFInputCreator())
 
     trained_models = term_trainer.get_trained_models()
     keywords_by_term = term_trainer.get_keywords_by_term()

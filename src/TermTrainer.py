@@ -8,6 +8,8 @@ from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
 import numpy as np
 from TrainedModels import TrainedModels
+from NormalInputCreator import NormalInputCreator
+
 
 class TermTrainer:
     def __init__(self, training_files):
@@ -22,6 +24,7 @@ class TermTrainer:
     def get_keywords_by_term(self):
         return self.keywords_by_term
 
+
     def create_input_arrays(self, files_input):
         texts = []
         keywords_by_text = []
@@ -29,6 +32,7 @@ class TermTrainer:
         for file_path, file_input in files_input.items():
             try:
                 file = json.load(open(file_path))
+
                 texts.append(file['text'])
                 keywords_by_text.append(file_input)
             except:
@@ -41,12 +45,14 @@ class TermTrainer:
         - texts: array of texts for traning
         - keywords_by_text: array of arrays of keywords for each text. 1 if it matches the keyword, 0 if not
     '''
-    def create_data_input(self, term_id, group_of_term_files):
+    def create_data_input(self, term_id, group_of_term_files, training_input_creator):
         # The index of the keyword matches the position of the training input { 'term_id': index }
         # E.g. { '54': 0, '23': 1, '457': 2, '241': 3 }
         keywords_indexes = {}
+        keywords = []
         for i in range(len(group_of_term_files)):
             keywords_indexes[group_of_term_files[i]] = i
+            keywords.append(group_of_term_files[i].get_name())
         self.keywords_by_term[term_id] = keywords_indexes
 
         files_input = {}
@@ -58,10 +64,10 @@ class TermTrainer:
                     files_input[file_path] = [0] * len(group_of_term_files)
                 files_input[file_path][keywords_indexes[term_files]] = 1
 
-        texts, keywords_by_text = self.create_input_arrays(files_input)
+        texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
         return texts, keywords_by_text, keywords_indexes
 
-    def generate_model_for_group_of_terms(self, texts, keywords_by_text, keywords_indexes):
+    def generate_model_for_group_of_terms(self, texts, keywords_by_text):
         number_of_categories = len(keywords_by_text[0])
         # Tokenización
         tokenizer = Tokenizer()
@@ -107,15 +113,14 @@ class TermTrainer:
 
         return model
 
+    def train_group(self, term_id, group_of_term_files, training_input_creator):
+        texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files, training_input_creator)
 
-    def train_group(self, term_id, group_of_term_files):
-        texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files)
-
-        model = self.generate_model_for_group_of_terms(texts, keywords_by_text, keywords_indexes)
+        model = self.generate_model_for_group_of_terms(texts, keywords_by_text)
 
         self.trained_models.add_model_for_term_children(term_id, model)
 
-    def train_model_by_thesaurus(self, thesaurus, term_id):
+    def train_model_by_thesaurus(self, thesaurus, term_id, training_input_creator):
         children = thesaurus.get_by_id(term_id).get_children()
         if not children:
             return
@@ -124,8 +129,7 @@ class TermTrainer:
             term_file = self.training_files.get_term_file_with_children_files(child_id)
             group_of_term_files.append(term_file)
 
-        self.train_group(term_id, group_of_term_files)
+        self.train_group(term_id, group_of_term_files, training_input_creator)
 
         for child_id in children:
-            self.train_model_by_thesaurus(thesaurus, child_id)
-
+            self.train_model_by_thesaurus(thesaurus, child_id, training_input_creator)

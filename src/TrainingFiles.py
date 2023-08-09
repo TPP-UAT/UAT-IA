@@ -34,5 +34,5 @@ class TrainingFiles:
 
         files_paths = self.get_files_from_children(children, files_paths)
 
-        return TermFiles(term_file.get_id(), files_paths, term_file.get_children())
+        return TermFiles(term_file.get_id(), term_file.get_name(), files_paths, term_file.get_children())
 
