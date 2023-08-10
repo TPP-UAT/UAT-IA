@@ -69,8 +69,9 @@ class TFIDFInputCreator:
             try:
                 file = json.load(open(file_path))
                 text_modified = self.generate_tf_idf([file['text']])
-                texts.append(text_modified[0])
-                keywords_by_text.append(file_input)
+                if text_modified[0] not in texts:
+                    texts.append(text_modified[0])
+                    keywords_by_text.append(file_input)
             except:
                 print("Error trying to load file with path: ", file_path)
 

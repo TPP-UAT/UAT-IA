@@ -10,20 +10,28 @@ class TermPrediction:
 
     def get_predicted_ids(self, threshold, predictions, keywords):
         predicted_categories = []
+        probabilities = []
         for prediction in predictions:
+            print("predictions: ", predictions)
             predicted_category = [1 if prob >= threshold else 0 for prob in prediction]
+            probabilities = [prob if prob >= threshold else 0 for prob in prediction]
             predicted_categories.append(predicted_category)
+        print("probabilities: ", probabilities)
 
         predictions_ids = []
+        predictions_probs = []
         for prediction_by_text in predicted_categories:
             predicted_terms = []
+            predicted_probabilites = []
             for term, index in keywords.items():
                 if prediction_by_text[index] == 1:
                     predicted_terms.append(term.get_id())
+                    predicted_probabilites.append(probabilities[index])
             if len(predicted_terms):
                 predictions_ids.append(predicted_terms)
+                predictions_probs.append(predicted_probabilites)
 
-        return predictions_ids
+        return predictions_ids, predictions_probs
 
     def predict_texts_with_model(self, texts, model, keywords):
         # Tokenización
@@ -56,7 +64,8 @@ class TermPrediction:
             self.keywords_by_term.get(term_id, None)
         )
         predicted_ids.extend(selected_ids)
-        for selected_id in selected_children_ids[0]:
-            self.predict_texts(texts, selected_id, predicted_ids)
+        if len(selected_children_ids):
+            for selected_id in selected_children_ids[0]:
+                self.predict_texts(texts, selected_id, predicted_ids)
 
         return predicted_ids

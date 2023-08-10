@@ -15,7 +15,8 @@ class TermFiles:
         return self.id
 
     def get_files_paths(self):
-        return self.files_paths
+        files = list(set(self.files_paths))
+        return files
 
     def get_children(self):
         return self.children
