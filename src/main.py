@@ -16,20 +16,21 @@ def train_and_predict(input_creator):
     term_predicton = TermPrediction(trained_models, keywords_by_term)
     texts = ["Mineralogy mineralogy mineralogy mineralogy mineralogy mineralogy mineralogy"]
 
-    predicted_ids = []
-    predictions_ids = term_predicton.predict_texts(texts, term_id, predicted_ids)
+    predicted_terms = []
+    predictions = term_predicton.predict_texts(texts, term_id, predicted_terms)
 
-    # TODO: Agregar term_name a termFile
-    predicted_keywords = []
-    for prediction_ids in predictions_ids:
-        keywords_by_text = []
-        for id in prediction_ids:
-            keywords_by_text.append(branch_thesaurus.get_by_id(id).get_name())
-        predicted_keywords.append(keywords_by_text)
-    print("Predicciones: ", predicted_keywords)
+    print('----------------------------- Predictions ----------------------------')
+    if all(len(prediction) == 0 for prediction in predictions):
+        print("No prediction for the text")
+    else:
+        # First iterator if we have multiple texts to predict
+        for prediction in predictions:
+            # Second iterator if we have multiple predictions in same level
+            for predicted_term in prediction:
+                term = predicted_term.get_term()
+                probability = format(predicted_term.get_probability(), ".2f")
+                print(f"Term: {term.get_name()}, Probability: {probability}")
 
-    predicted_ids = []
-    predictions_ids = term_predicton.predict_texts(texts, term_id, predicted_ids)
 
 if __name__ == '__main__':
     mapper = UATMapper("./data/UAT.json")
@@ -43,8 +44,8 @@ if __name__ == '__main__':
     training_files = term_file_mapper.get_training_files()
     term_files = training_files.get_term_files()
 
-    print('Normal train')
+    print('----------------------------- Normal train ----------------------------')
     train_and_predict(NormalInputCreator())
-    print('TFIDF train')
+    print('----------------------------- TFIDF train -----------------------------')
     train_and_predict(TFIDFInputCreator())
     

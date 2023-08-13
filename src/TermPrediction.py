@@ -1,5 +1,6 @@
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from Prediction import Prediction
 
 
 class TermPrediction:
@@ -8,30 +9,30 @@ class TermPrediction:
         self.trained_models = trained_models
         self.keywords_by_term = keywords_by_term
 
-    def get_predicted_ids(self, threshold, predictions, keywords):
-        predicted_categories = []
-        probabilities = []
+    def get_predicted_ids(self, predictions):
+        predicted_ids = []
         for prediction in predictions:
-            print("predictions: ", predictions)
-            predicted_category = [1 if prob >= threshold else 0 for prob in prediction]
-            probabilities = [prob if prob >= threshold else 0 for prob in prediction]
-            predicted_categories.append(predicted_category)
-        print("probabilities: ", probabilities)
+            term = prediction.get_term()
+            predicted_ids.append(term.get_id())
+        return predicted_ids
 
-        predictions_ids = []
-        predictions_probs = []
+    def get_predictions(self, threshold, predictions, keywords):
+        predicted_categories = []
+        for prediction in predictions:
+            predicted_category = [1 if prob >= threshold else 0 for prob in prediction]
+            predicted_categories.append(predicted_category)
+
+        term_predictions = []
         for prediction_by_text in predicted_categories:
-            predicted_terms = []
-            predicted_probabilites = []
+            predictions_with_prob = []
             for term, index in keywords.items():
                 if prediction_by_text[index] == 1:
-                    predicted_terms.append(term.get_id())
-                    predicted_probabilites.append(probabilities[index])
-            if len(predicted_terms):
-                predictions_ids.append(predicted_terms)
-                predictions_probs.append(predicted_probabilites)
-
-        return predictions_ids, predictions_probs
+                    # Create Prediction class. The [0] is because we only have one text
+                    prediction_obj = Prediction(term, predictions[0][index], "test")
+                    predictions_with_prob.append(prediction_obj)
+            if len(predictions_with_prob):
+                term_predictions.append(predictions_with_prob)
+        return term_predictions
 
     def predict_texts_with_model(self, texts, model, keywords):
         # Tokenización
@@ -48,24 +49,26 @@ class TermPrediction:
         predictions = model.predict(sequences_padded)
 
         prediction_threshold = 0.7
-        predicted_ids = self.get_predicted_ids(prediction_threshold, predictions, keywords)
+        predicted_terms = self.get_predictions(prediction_threshold, predictions, keywords)
 
         selected_children_threshold = 0.5
-        selected_children_ids = self.get_predicted_ids(selected_children_threshold, predictions, keywords)
-        return predicted_ids, selected_children_ids
+        predicted_children_terms = self.get_predictions(selected_children_threshold, predictions, keywords)
+        return predicted_terms, predicted_children_terms
 
     # TODO no deberiamos necesitar un term_id inicial
-    def predict_texts(self, texts, term_id, predicted_ids):
+    def predict_texts(self, texts, term_id, predicted_terms):
         model_for_term_children = self.trained_models.get_by_id(term_id)
         if not model_for_term_children:
             return
-        selected_ids, selected_children_ids = self.predict_texts_with_model(
+        selected_terms, selected_children = self.predict_texts_with_model(
             texts, model_for_term_children,
             self.keywords_by_term.get(term_id, None)
         )
-        predicted_ids.extend(selected_ids)
-        if len(selected_children_ids):
-            for selected_id in selected_children_ids[0]:
-                self.predict_texts(texts, selected_id, predicted_ids)
+        if len(selected_children):
+            selected_children_ids = self.get_predicted_ids(selected_children[0])
+            predicted_terms.extend(selected_terms)
+            
+            for selected_children_id in selected_children_ids :
+                self.predict_texts(texts, selected_children_id, predicted_terms)
 
-        return predicted_ids
+        return predicted_terms
