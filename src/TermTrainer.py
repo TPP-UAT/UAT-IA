@@ -114,7 +114,6 @@ class TermTrainer:
         return model
 
     def train_group(self, term_id, group_of_term_files, training_input_creator):
-        print("ENTRENANDO.............")
         texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files, training_input_creator)
         print("Texts: ", texts)
         print("Keyowrds: ", keywords_by_text)

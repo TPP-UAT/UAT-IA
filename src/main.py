@@ -60,10 +60,10 @@ if __name__ == '__main__':
     training_files = term_file_mapper.get_training_files()
     term_files = training_files.get_term_files()
 
-    # print('----------------------------- Normal train ----------------------------')
-    # train_and_predict(NormalInputCreator())
-    # print('----------------------------- TFIDF train -----------------------------')
-    # train_and_predict(TFIDFInputCreator())
+    print('----------------------------- Normal train ----------------------------')
+    train_and_predict(NormalInputCreator())
+    print('----------------------------- TFIDF train -----------------------------')
+    train_and_predict(TFIDFInputCreator())
     print('----------------------------- Summarize train -----------------------------')
     train_and_predict(SummarizeInputCreator())
     
