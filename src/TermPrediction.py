@@ -5,9 +5,10 @@ from Prediction import Prediction
 
 class TermPrediction:
 
-    def __init__(self, trained_models, keywords_by_term):
+    def __init__(self, trained_models, keywords_by_term, train_multiplier):
         self.trained_models = trained_models
         self.keywords_by_term = keywords_by_term
+        self.train_multiplier = train_multiplier
 
     def get_predicted_ids(self, predictions):
         predicted_ids = []
@@ -28,7 +29,7 @@ class TermPrediction:
             for term, index in keywords.items():
                 if prediction_by_text[index] == 1:
                     # Create Prediction class. The [0] is because we only have one text
-                    prediction_obj = Prediction(term, predictions[0][index], "test")
+                    prediction_obj = Prediction(term, predictions[0][index], self.train_multiplier)
                     predictions_with_prob.append(prediction_obj)
             if len(predictions_with_prob):
                 term_predictions.append(predictions_with_prob)

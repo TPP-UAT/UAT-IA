@@ -1,8 +1,8 @@
 class Prediction:
-    def __init__(self, term, probability, input_training):
+    def __init__(self, term, probability, multiplier):
         self.term = term
         self.probability = probability
-        self.input_training = input_training
+        self.multiplier = multiplier
 
     def get_term(self):
         return self.term
@@ -10,5 +10,5 @@ class Prediction:
     def get_probability(self):
         return self.probability
 
-    def get_input_training(self):
-        return self.input_training
+    def get_multiplier(self):
+        return self.multiplier

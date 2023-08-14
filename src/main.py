@@ -4,6 +4,20 @@ from TermTrainer import TermTrainer
 from TermPrediction import TermPrediction
 from NormalInputCreator import NormalInputCreator
 from TFIDFInputCreator import TFIDFInputCreator
+from SummarizeInputCreator import SummarizeInputCreator
+
+NORMAL_TRAIN = 0.55
+TFIDF_TRAIN = 0.45
+
+
+def get_prediction_multiplier(input_creator):
+    if isinstance(input_creator, NormalInputCreator):
+        return NORMAL_TRAIN
+    elif isinstance(input_creator, TFIDFInputCreator):
+        return TFIDF_TRAIN
+    else:
+        return 0
+
 
 def train_and_predict(input_creator):
     term_id = '974'
@@ -13,7 +27,9 @@ def train_and_predict(input_creator):
     trained_models = term_trainer.get_trained_models()
     keywords_by_term = term_trainer.get_keywords_by_term()
 
-    term_predicton = TermPrediction(trained_models, keywords_by_term)
+    train_multiplier = get_prediction_multiplier(input_creator)
+
+    term_predicton = TermPrediction(trained_models, keywords_by_term, train_multiplier)
     texts = ["Mineralogy mineralogy mineralogy mineralogy mineralogy mineralogy mineralogy"]
 
     predicted_terms = []
@@ -29,7 +45,7 @@ def train_and_predict(input_creator):
             for predicted_term in prediction:
                 term = predicted_term.get_term()
                 probability = format(predicted_term.get_probability(), ".2f")
-                print(f"Term: {term.get_name()}, Probability: {probability}")
+                print(f"Term: {term.get_name()}, Probability: {probability}, Multiplier: {predicted_term.get_multiplier()}")
 
 
 if __name__ == '__main__':
@@ -44,8 +60,10 @@ if __name__ == '__main__':
     training_files = term_file_mapper.get_training_files()
     term_files = training_files.get_term_files()
 
-    print('----------------------------- Normal train ----------------------------')
-    train_and_predict(NormalInputCreator())
-    print('----------------------------- TFIDF train -----------------------------')
-    train_and_predict(TFIDFInputCreator())
+    # print('----------------------------- Normal train ----------------------------')
+    # train_and_predict(NormalInputCreator())
+    # print('----------------------------- TFIDF train -----------------------------')
+    # train_and_predict(TFIDFInputCreator())
+    print('----------------------------- Summarize train -----------------------------')
+    train_and_predict(SummarizeInputCreator())
     
