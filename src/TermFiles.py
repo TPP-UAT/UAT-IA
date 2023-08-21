@@ -1,21 +1,31 @@
 class TermFiles:
-    def __init__(self, id):
+    def __init__(self, id, name, files_paths=None, children=None):
+        if children is None:
+            children = []
+        if files_paths is None:
+            files_paths = []
+
         self.id = id
-        self.files = []
-        self.children = []
+        self.name = name
+        self.files_paths = files_paths
+        self.children = children
 
     # Getters
     def get_id(self):
         return self.id
 
-    def get_files(self):
-        return self.files
+    def get_files_paths(self):
+        files = list(set(self.files_paths))
+        return files
 
     def get_children(self):
         return self.children
     
-    def add_file(self, file):
-        self.files.append(file)
+    def get_name(self):
+        return self.name
+    
+    def add_file_path(self, file_path):
+        self.files_paths.append(file_path)
 
     def add_children(self, children):
         self.children = children

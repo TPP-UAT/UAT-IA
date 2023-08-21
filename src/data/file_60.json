@@ -1,0 +1,5 @@
+{
+  "title": "Technical evaluation of additive manufacturing technologies for in-situ fabrication with lunar regolith",
+  "text": "In-Situ Fabrication and Repair can significantly reduce the construction cost of a permanent Moon base by using additive manufacturing (AM) and exploiting local resources instead of bringing all the required materials from Earth. In this article, we evaluate alternative additive manufacturing technologies for building a lunar base and maintaining it across its lifecycle. We compare alternative 3D-printing techniques, already tested for manufacturing with simulants of lunar regolith, using energy, Earth-deliverables consumption, and compressive strength of the produced samples as figures of merit. Based on our analysis, we conclude that Cement Contour Crafting and Stereo-lithography AM techniques are the most promising solutions for the construction of outdoor lunar infrastructure and small precise parts and instruments, respectively.",
+  "keywords": ["Additive manufacturing", "3D-printing", "ISFR", "ISRU", "Moon exploration", "Lunar regolith"]
+}
