@@ -4,7 +4,6 @@ from TermTrainer import TermTrainer
 from TermPrediction import TermPrediction
 from NormalInputCreator import NormalInputCreator
 from TFIDFInputCreator import TFIDFInputCreator
-from SummarizeInputCreator import SummarizeInputCreator
 
 NORMAL_TRAIN = 0.55
 TFIDF_TRAIN = 0.45
@@ -20,8 +19,9 @@ def get_prediction_multiplier(input_creator):
 
 
 def train_and_predict(input_creator):
-    term_id = '974'
+    term_id = '972'
     term_trainer = TermTrainer(training_files)
+
     term_trainer.train_model_by_thesaurus(branch_thesaurus, term_id, input_creator)
 
     trained_models = term_trainer.get_trained_models()
@@ -64,6 +64,4 @@ if __name__ == '__main__':
     train_and_predict(NormalInputCreator())
     print('----------------------------- TFIDF train -----------------------------')
     train_and_predict(TFIDFInputCreator())
-    print('----------------------------- Summarize train -----------------------------')
-    train_and_predict(SummarizeInputCreator())
     

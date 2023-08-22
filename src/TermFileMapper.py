@@ -11,41 +11,18 @@ class TermFileMapper:
     def get_training_files(self):
         return self.training_files
     
-    def add_remaining_terms_of_thesaurus_to_training_files(self, thesaurus):
-        for _, term_value in thesaurus.get_terms().items():
-            term_id = term_value.get_id()
-            if term_id not in self.term_file_ids:
-                term_files = TermFiles(term_id, term_value.get_name())
-                self.training_files.add_term_files(term_files)
-    
-    def add_term_file(self, term_id, term_name, term_children, file_path):
-        # If term_id is not in term_file_ids, add it to term_file_ids and create a new TermFiles object
-        if term_id not in self.term_file_ids:
-            self.term_file_ids.append(term_id)
-            term_files = TermFiles(term_id, term_name)
-            term_files.add_children(term_children)
-            term_files.add_file_path(file_path)
-            self.training_files.add_term_files(term_files)
-        # Else, add the file into the TermFiles object
-        else:
-            term_files = self.training_files.get_by_id(term_id)
-            term_files.add_file_path(file_path)
+    def add_term_file(self, term_id, term_name, term_children, file_paths):
+        term_files = TermFiles(term_id, term_name, file_paths, term_children)
+        self.training_files.add_term_files(term_files)
 
-    def add_keywords_for_thesaurus_terms(self, keywords, thesaurus, file_path):
-        for keyword in keywords:
-            for _, term_value in thesaurus.get_terms().items():
-                term_id = term_value.get_id()
-                if keyword == term_value.get_name():
-                    term_children = term_value.get_children()
-                    self.add_term_file(term_id, term_value.get_name(), term_children, file_path)
-        self.add_remaining_terms_of_thesaurus_to_training_files(thesaurus)
-                    
     def create_training_files(self, thesaurus):
-        json_data = json.load(open('./data/training_files.json'))
+        json_data = json.load(open('./data/pdfs.json'))
 
-        files = json_data["files"]
-        for file_name in files:
-            file = json.load(open('./data/' + file_name))
-            file_path = './data/' + file_name
-            keywords = file["keywords"]
-            self.add_keywords_for_thesaurus_terms(keywords, thesaurus, file_path)
+        # TODO: Add term event if it doesnt have any document (e.g. Lunar Phase)
+        for term in json_data:
+            id = term['id']
+            thesaurus_term = thesaurus.get_by_id(str(id))
+            if thesaurus_term:
+                name = thesaurus_term.get_name()
+                children = thesaurus.get_by_id(id).get_children()
+                self.add_term_file(id, name, children, term['files'])

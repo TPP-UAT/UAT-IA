@@ -1,0 +1,972 @@
+[
+    {
+        "id": "1692",
+        "files": [
+            "PDFs/Sarantos_2021_ApJL_919_L14.pdf",
+            "PDFs/Wei_2020_Planet._Sci._J._1_56.pdf",
+            "PDFs/Moseley_2020_Planet._Sci._J._1_32.pdf",
+            "PDFs/Byron_2021_Planet._Sci._J._2_189.pdf",
+            "PDFs/Xu_2021_AJ_162_29.pdf",
+            "PDFs/Czaplinski_2021_Planet._Sci._J._2_51.pdf",
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf",
+            "PDFs/O\u2019Brien_2022_Planet._Sci._J._3_235.pdf",
+            "PDFs/Hooper_2023_Planet._Sci._J._4_26.pdf",
+            "PDFs/Pokorn\u00fd_2020_ApJ_894_114.pdf",
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf",
+            "PDFs/Bhiravarasu_2021_Planet._Sci._J._2_134.pdf",
+            "PDFs/Williams_2022_Planet._Sci._J._3_136.pdf",
+            "PDFs/Deutsch_2021_Planet._Sci._J._2_213.pdf",
+            "PDFs/Robbins_2022_Planet._Sci._J._3_274.pdf",
+            "PDFs/Wang_2021_ApJL_907_L32.pdf",
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Ahrens_2021_Planet._Sci._J._2_38.pdf",
+            "PDFs/Lemelin_2021_Planet._Sci._J._2_103.pdf",
+            "PDFs/Poppe_2021_Planet._Sci._J._2_60.pdf",
+            "PDFs/N\u00e9non_2020_Planet._Sci._J._1_69.pdf",
+            "PDFs/R\u00fcsch_2023_Planet._Sci._J._4_126.pdf",
+            "PDFs/Czajka_2023_Planet._Sci._J._4_137.pdf",
+            "PDFs/van_Kooten_2020_Planet._Sci._J._1_67.pdf",
+            "PDFs/Levine_2023_Planet._Sci._J._4_92.pdf",
+            "PDFs/Chen_2022_ApJL_931_L24.pdf",
+            "PDFs/Tang_2020_Planet._Sci._J._1_49.pdf",
+            "PDFs/Schorghofer_2022_ApJL_927_L34.pdf",
+            "PDFs/Glotch_2021_Planet._Sci._J._2_136.pdf",
+            "PDFs/Szabo_2020_ApJ_891_100.pdf",
+            "PDFs/Fuqua_Haviland_2022_Planet._Sci._J._3_40.pdf",
+            "PDFs/Chuang_2022_Planet._Sci._J._3_231.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf"
+        ]
+    },
+    {
+        "id": "499",
+        "files": [
+            "PDFs/Sarantos_2021_ApJL_919_L14.pdf",
+            "PDFs/Narendranath_2022_ApJL_937_L23.pdf",
+            "PDFs/Dawkins_2022_Planet._Sci._J._3_220.pdf",
+            "PDFs/Szabo_2020_ApJ_891_100.pdf"
+        ]
+    },
+    {
+        "id": "968",
+        "files": []
+    },
+    {
+        "id": "2316",
+        "files": []
+    },
+    {
+        "id": "41",
+        "files": []
+    },
+    {
+        "id": "44",
+        "files": []
+    },
+    {
+        "id": "964",
+        "files": []
+    },
+    {
+        "id": "963",
+        "files": []
+    },
+    {
+        "id": "950",
+        "files": []
+    },
+    {
+        "id": "957",
+        "files": []
+    },
+    {
+        "id": "970",
+        "files": []
+    },
+    {
+        "id": "976",
+        "files": []
+    },
+    {
+        "id": "974",
+        "files": [
+            "PDFs/Sarantos_2021_ApJL_919_L14.pdf",
+            "PDFs/Wei_2020_Planet._Sci._J._1_56.pdf",
+            "PDFs/Qiao_2021_Planet._Sci._J._2_66.pdf",
+            "PDFs/Werner_2022_Planet._Sci._J._3_65.pdf",
+            "PDFs/Czaplinski_2021_Planet._Sci._J._2_51.pdf",
+            "PDFs/Narendranath_2022_ApJL_937_L23.pdf",
+            "PDFs/O\u2019Brien_2022_Planet._Sci._J._3_235.pdf",
+            "PDFs/Pokorn\u00fd_2020_ApJ_894_114.pdf",
+            "PDFs/Hidaka_2020_ApJ_904_183.pdf",
+            "PDFs/Wang_2021_ApJL_907_L32.pdf",
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Lemelin_2022_Planet._Sci._J._3_63.pdf",
+            "PDFs/Ahrens_2021_Planet._Sci._J._2_38.pdf",
+            "PDFs/Kumari_2022_Planet._Sci._J._3_224.pdf",
+            "PDFs/N\u00e9non_2020_Planet._Sci._J._1_69.pdf",
+            "PDFs/van_der_Bogert_2021_Planet._Sci._J._2_84.pdf",
+            "PDFs/Chen_2022_ApJL_931_L24.pdf",
+            "PDFs/Morse_2021_Planet._Sci._J._2_167.pdf",
+            "PDFs/Schorghofer_2022_ApJL_927_L34.pdf",
+            "PDFs/Reach_2023_Planet._Sci._J._4_45.pdf",
+            "PDFs/Xu_2020_ApJL_902_L30.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf"
+        ]
+    },
+    {
+        "id": "2116",
+        "files": [
+            "PDFs/Sarantos_2021_ApJL_919_L14.pdf",
+            "PDFs/Deutsch_2021_Planet._Sci._J._2_213.pdf",
+            "PDFs/N\u00e9non_2020_Planet._Sci._J._1_69.pdf"
+        ]
+    },
+    {
+        "id": "900",
+        "files": [
+            "PDFs/Sarantos_2021_ApJL_919_L14.pdf"
+        ]
+    },
+    {
+        "id": "954",
+        "files": [
+            "PDFs/Wei_2020_Planet._Sci._J._1_56.pdf",
+            "PDFs/Draper_2021_Planet._Sci._J._2_79.pdf",
+            "PDFs/Cohen_2021_Planet._Sci._J._2_145.pdf",
+            "PDFs/Levine_2023_Planet._Sci._J._4_92.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf"
+        ]
+    },
+    {
+        "id": "949",
+        "files": [
+            "PDFs/Wei_2020_Planet._Sci._J._1_56.pdf",
+            "PDFs/Xu_2021_AJ_162_29.pdf",
+            "PDFs/Draper_2021_Planet._Sci._J._2_79.pdf",
+            "PDFs/O\u2019Brien_2022_Planet._Sci._J._3_235.pdf",
+            "PDFs/Pokorn\u00fd_2020_ApJ_894_114.pdf",
+            "PDFs/Bhiravarasu_2021_Planet._Sci._J._2_134.pdf",
+            "PDFs/Robertson_2021_Planet._Sci._J._2_88.pdf",
+            "PDFs/Robbins_2022_Planet._Sci._J._3_274.pdf",
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Morse_2021_Planet._Sci._J._2_167.pdf",
+            "PDFs/Boazman_2022_Planet._Sci._J._3_275.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf",
+            "PDFs/Liu_2023_Planet._Sci._J._4_133.pdf"
+        ]
+    },
+    {
+        "id": "952",
+        "files": [
+            "PDFs/Wei_2020_Planet._Sci._J._1_56.pdf",
+            "PDFs/Qiao_2021_Planet._Sci._J._2_66.pdf",
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf",
+            "PDFs/Jiang_2023_ApJL_945_L26.pdf",
+            "PDFs/Tyler_2021_Planet._Sci._J._2_70.pdf",
+            "PDFs/Lemelin_2021_Planet._Sci._J._2_103.pdf",
+            "PDFs/van_Kooten_2020_Planet._Sci._J._1_67.pdf",
+            "PDFs/Levine_2023_Planet._Sci._J._4_92.pdf",
+            "PDFs/Chen_2022_ApJL_931_L24.pdf",
+            "PDFs/Tang_2020_Planet._Sci._J._1_49.pdf",
+            "PDFs/Glotch_2021_Planet._Sci._J._2_136.pdf"
+        ]
+    },
+    {
+        "id": "972",
+        "files": [
+            "PDFs/Wei_2020_Planet._Sci._J._1_56.pdf",
+            "PDFs/Byron_2021_Planet._Sci._J._2_189.pdf",
+            "PDFs/Czaplinski_2021_Planet._Sci._J._2_51.pdf",
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf",
+            "PDFs/Hooper_2023_Planet._Sci._J._4_26.pdf",
+            "PDFs/Lou_2023_ApJ_943_17.pdf",
+            "PDFs/Farrell_2021_Planet._Sci._J._2_61.pdf",
+            "PDFs/Bhiravarasu_2021_Planet._Sci._J._2_134.pdf",
+            "PDFs/Williams_2022_Planet._Sci._J._3_136.pdf",
+            "PDFs/Deutsch_2021_Planet._Sci._J._2_213.pdf",
+            "PDFs/Jiang_2023_ApJL_945_L26.pdf",
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Ahrens_2021_Planet._Sci._J._2_38.pdf",
+            "PDFs/Wilcoski_2022_Planet._Sci._J._3_99.pdf",
+            "PDFs/Lemelin_2021_Planet._Sci._J._2_103.pdf",
+            "PDFs/Czajka_2023_Planet._Sci._J._4_137.pdf",
+            "PDFs/van_der_Bogert_2021_Planet._Sci._J._2_84.pdf",
+            "PDFs/Chen_2022_ApJL_931_L24.pdf",
+            "PDFs/Morse_2021_Planet._Sci._J._2_167.pdf",
+            "PDFs/Tang_2020_Planet._Sci._J._1_49.pdf",
+            "PDFs/Schorghofer_2022_ApJL_927_L34.pdf",
+            "PDFs/Boazman_2022_Planet._Sci._J._3_275.pdf",
+            "PDFs/Glotch_2021_Planet._Sci._J._2_136.pdf",
+            "PDFs/Fuqua_Haviland_2022_Planet._Sci._J._3_40.pdf",
+            "PDFs/Chuang_2022_Planet._Sci._J._3_231.pdf"
+        ]
+    },
+    {
+        "id": "1530",
+        "files": [
+            "PDFs/Nesvorn\u00fd_2022_ApJL_941_L9.pdf"
+        ]
+    },
+    {
+        "id": "958",
+        "files": [
+            "PDFs/Nesvorn\u00fd_2022_ApJL_941_L9.pdf",
+            "PDFs/Werner_2022_Planet._Sci._J._3_65.pdf",
+            "PDFs/Pokorn\u00fd_2020_ApJ_894_114.pdf",
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf",
+            "PDFs/Robertson_2021_Planet._Sci._J._2_88.pdf",
+            "PDFs/Robbins_2022_Planet._Sci._J._3_274.pdf",
+            "PDFs/Szalay_2020_ApJL_890_L11.pdf",
+            "PDFs/Morse_2021_Planet._Sci._J._2_167.pdf",
+            "PDFs/Boazman_2022_Planet._Sci._J._3_275.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf"
+        ]
+    },
+    {
+        "id": "953",
+        "files": [
+            "PDFs/Qiao_2021_Planet._Sci._J._2_66.pdf",
+            "PDFs/Hooper_2023_Planet._Sci._J._4_26.pdf",
+            "PDFs/Bhiravarasu_2021_Planet._Sci._J._2_134.pdf"
+        ]
+    },
+    {
+        "id": "961",
+        "files": [
+            "PDFs/Qiao_2021_Planet._Sci._J._2_66.pdf",
+            "PDFs/Bramson_2022_Planet._Sci._J._3_216.pdf"
+        ]
+    },
+    {
+        "id": "1780",
+        "files": [
+            "PDFs/Qiao_2021_Planet._Sci._J._2_66.pdf",
+            "PDFs/Wilcoski_2022_Planet._Sci._J._3_99.pdf",
+            "PDFs/Glotch_2021_Planet._Sci._J._2_136.pdf"
+        ]
+    },
+    {
+        "id": "1256",
+        "files": [
+            "PDFs/Qiao_2021_Planet._Sci._J._2_66.pdf",
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf"
+        ]
+    },
+    {
+        "id": "975",
+        "files": [
+            "PDFs/Li_2023_AJ_165_147.pdf"
+        ]
+    },
+    {
+        "id": "1215",
+        "files": [
+            "PDFs/Li_2023_AJ_165_147.pdf"
+        ]
+    },
+    {
+        "id": "1179",
+        "files": [
+            "PDFs/Li_2023_AJ_165_147.pdf"
+        ]
+    },
+    {
+        "id": "1441",
+        "files": [
+            "PDFs/Werner_2022_Planet._Sci._J._3_65.pdf",
+            "PDFs/Czaplinski_2021_Planet._Sci._J._2_51.pdf",
+            "PDFs/Cohen_2021_Planet._Sci._J._2_145.pdf",
+            "PDFs/Kumari_2022_Planet._Sci._J._3_224.pdf",
+            "PDFs/R\u00fcsch_2023_Planet._Sci._J._4_126.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf"
+        ]
+    },
+    {
+        "id": "962",
+        "files": [
+            "PDFs/Werner_2022_Planet._Sci._J._3_65.pdf",
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Lemelin_2022_Planet._Sci._J._3_63.pdf",
+            "PDFs/Chen_2022_ApJL_931_L24.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf"
+        ]
+    },
+    {
+        "id": "948",
+        "files": [
+            "PDFs/Moseley_2020_Planet._Sci._J._1_32.pdf",
+            "PDFs/Byron_2021_Planet._Sci._J._2_189.pdf",
+            "PDFs/Ahrens_2021_Planet._Sci._J._2_38.pdf",
+            "PDFs/Dauphas_2022_Planet._Sci._J._3_29.pdf",
+            "PDFs/N\u00e9non_2020_Planet._Sci._J._1_69.pdf",
+            "PDFs/Chen_2022_ApJL_931_L24.pdf",
+            "PDFs/Morse_2021_Planet._Sci._J._2_167.pdf",
+            "PDFs/Reach_2023_Planet._Sci._J._4_45.pdf",
+            "PDFs/Dawkins_2022_Planet._Sci._J._3_220.pdf",
+            "PDFs/Szabo_2020_ApJ_891_100.pdf",
+            "PDFs/Fuqua_Haviland_2022_Planet._Sci._J._3_40.pdf"
+        ]
+    },
+    {
+        "id": "1938",
+        "files": [
+            "PDFs/Moseley_2020_Planet._Sci._J._1_32.pdf"
+        ]
+    },
+    {
+        "id": "967",
+        "files": [
+            "PDFs/Draper_2021_Planet._Sci._J._2_79.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf"
+        ]
+    },
+    {
+        "id": "1255",
+        "files": [
+            "PDFs/Draper_2021_Planet._Sci._J._2_79.pdf",
+            "PDFs/Lemelin_2022_Planet._Sci._J._3_63.pdf"
+        ]
+    },
+    {
+        "id": "1252",
+        "files": [
+            "PDFs/Draper_2021_Planet._Sci._J._2_79.pdf"
+        ]
+    },
+    {
+        "id": "1338",
+        "files": [
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf"
+        ]
+    },
+    {
+        "id": "1522",
+        "files": [
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf"
+        ]
+    },
+    {
+        "id": "998",
+        "files": [
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf"
+        ]
+    },
+    {
+        "id": "695",
+        "files": [
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf"
+        ]
+    },
+    {
+        "id": "1260",
+        "files": [
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf",
+            "PDFs/Chuang_2022_Planet._Sci._J._3_231.pdf"
+        ]
+    },
+    {
+        "id": "1360",
+        "files": [
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf"
+        ]
+    },
+    {
+        "id": "1547",
+        "files": [
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf"
+        ]
+    },
+    {
+        "id": "947",
+        "files": [
+            "PDFs/Burns_2021_Planet._Sci._J._2_44.pdf",
+            "PDFs/Gan_2022_ApJ_930_42.pdf",
+            "PDFs/Wilcoski_2022_Planet._Sci._J._3_99.pdf",
+            "PDFs/Crandall_2019_ApJ_887_27.pdf",
+            "PDFs/van_Kooten_2020_Planet._Sci._J._1_67.pdf",
+            "PDFs/Dawkins_2022_Planet._Sci._J._3_220.pdf"
+        ]
+    },
+    {
+        "id": "2115",
+        "files": [
+            "PDFs/Narendranath_2022_ApJL_937_L23.pdf",
+            "PDFs/Czajka_2023_Planet._Sci._J._4_137.pdf"
+        ]
+    },
+    {
+        "id": "1558",
+        "files": [
+            "PDFs/Narendranath_2022_ApJL_937_L23.pdf"
+        ]
+    },
+    {
+        "id": "779",
+        "files": [
+            "PDFs/O\u2019Brien_2022_Planet._Sci._J._3_235.pdf",
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf",
+            "PDFs/Robertson_2021_Planet._Sci._J._2_88.pdf",
+            "PDFs/Robbins_2022_Planet._Sci._J._3_274.pdf",
+            "PDFs/Szalay_2020_ApJL_890_L11.pdf",
+            "PDFs/Kegerreis_2022_ApJL_937_L40.pdf"
+        ]
+    },
+    {
+        "id": "1857",
+        "files": [
+            "PDFs/O\u2019Brien_2022_Planet._Sci._J._3_235.pdf"
+        ]
+    },
+    {
+        "id": "2037",
+        "files": [
+            "PDFs/Pokorn\u00fd_2020_ApJ_894_114.pdf",
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Crandall_2019_ApJ_887_27.pdf",
+            "PDFs/Xu_2020_ApJL_902_L30.pdf"
+        ]
+    },
+    {
+        "id": "1048",
+        "files": [
+            "PDFs/Pokorn\u00fd_2020_ApJ_894_114.pdf"
+        ]
+    },
+    {
+        "id": "956",
+        "files": [
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf"
+        ]
+    },
+    {
+        "id": "955",
+        "files": [
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf"
+        ]
+    },
+    {
+        "id": "1251",
+        "files": [
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf",
+            "PDFs/Deutsch_2021_Planet._Sci._J._2_213.pdf",
+            "PDFs/Wilcoski_2022_Planet._Sci._J._3_99.pdf"
+        ]
+    },
+    {
+        "id": "2173",
+        "files": [
+            "PDFs/Smith_2022_Planet._Sci._J._3_217.pdf"
+        ]
+    },
+    {
+        "id": "1534",
+        "files": [
+            "PDFs/Zhang_2020_ApJL_893_L36.pdf",
+            "PDFs/Lou_2023_ApJ_943_17.pdf",
+            "PDFs/Wang_2021_ApJL_907_L32.pdf",
+            "PDFs/Poppe_2021_Planet._Sci._J._2_60.pdf",
+            "PDFs/N\u00e9non_2020_Planet._Sci._J._1_69.pdf",
+            "PDFs/Crandall_2019_ApJ_887_27.pdf",
+            "PDFs/Szabo_2020_ApJ_891_100.pdf"
+        ]
+    },
+    {
+        "id": "960",
+        "files": [
+            "PDFs/Zhang_2020_ApJL_893_L36.pdf",
+            "PDFs/Hamid_2023_Planet._Sci._J._4_88.pdf",
+            "PDFs/Poppe_2021_Planet._Sci._J._2_60.pdf"
+        ]
+    },
+    {
+        "id": "1239",
+        "files": [
+            "PDFs/Zhang_2020_ApJL_893_L36.pdf"
+        ]
+    },
+    {
+        "id": "1544",
+        "files": [
+            "PDFs/Lou_2023_ApJ_943_17.pdf",
+            "PDFs/Farrell_2021_Planet._Sci._J._2_61.pdf",
+            "PDFs/Wang_2021_ApJL_907_L32.pdf"
+        ]
+    },
+    {
+        "id": "2086",
+        "files": [
+            "PDFs/Lou_2023_ApJ_943_17.pdf"
+        ]
+    },
+    {
+        "id": "2089",
+        "files": [
+            "PDFs/Farrell_2021_Planet._Sci._J._2_61.pdf"
+        ]
+    },
+    {
+        "id": "567",
+        "files": [
+            "PDFs/Hidaka_2020_ApJ_904_183.pdf"
+        ]
+    },
+    {
+        "id": "2069",
+        "files": [
+            "PDFs/Hidaka_2020_ApJ_904_183.pdf",
+            "PDFs/Tang_2020_Planet._Sci._J._1_49.pdf"
+        ]
+    },
+    {
+        "id": "1278",
+        "files": [
+            "PDFs/Bhiravarasu_2021_Planet._Sci._J._2_134.pdf"
+        ]
+    },
+    {
+        "id": "1329",
+        "files": [
+            "PDFs/Bhiravarasu_2021_Planet._Sci._J._2_134.pdf",
+            "PDFs/Bramson_2022_Planet._Sci._J._3_216.pdf"
+        ]
+    },
+    {
+        "id": "99",
+        "files": [
+            "PDFs/Gan_2022_ApJ_930_42.pdf"
+        ]
+    },
+    {
+        "id": "838",
+        "files": [
+            "PDFs/Gan_2022_ApJ_930_42.pdf"
+        ]
+    },
+    {
+        "id": "1092",
+        "files": [
+            "PDFs/Robertson_2021_Planet._Sci._J._2_88.pdf"
+        ]
+    },
+    {
+        "id": "1033",
+        "files": [
+            "PDFs/Robertson_2021_Planet._Sci._J._2_88.pdf"
+        ]
+    },
+    {
+        "id": "436",
+        "files": [
+            "PDFs/Williams_2022_Planet._Sci._J._3_136.pdf",
+            "PDFs/Wang_2021_ApJL_907_L32.pdf",
+            "PDFs/Dauphas_2022_Planet._Sci._J._3_29.pdf",
+            "PDFs/Cohen_2021_Planet._Sci._J._2_145.pdf",
+            "PDFs/Tyler_2021_Planet._Sci._J._2_70.pdf",
+            "PDFs/Nie_2019_ApJL_884_L48.pdf",
+            "PDFs/Asphaug_2021_Planet._Sci._J._2_200.pdf",
+            "PDFs/Kegerreis_2022_ApJL_937_L40.pdf",
+            "PDFs/van_Kooten_2020_Planet._Sci._J._1_67.pdf",
+            "PDFs/Tang_2020_Planet._Sci._J._1_49.pdf",
+            "PDFs/Reach_2023_Planet._Sci._J._4_45.pdf",
+            "PDFs/Liu_2023_Planet._Sci._J._4_133.pdf"
+        ]
+    },
+    {
+        "id": "1548",
+        "files": [
+            "PDFs/Williams_2022_Planet._Sci._J._3_136.pdf",
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Levine_2023_Planet._Sci._J._4_92.pdf"
+        ]
+    },
+    {
+        "id": "2113",
+        "files": [
+            "PDFs/Deutsch_2021_Planet._Sci._J._2_213.pdf",
+            "PDFs/Bramson_2022_Planet._Sci._J._3_216.pdf",
+            "PDFs/N\u00e9non_2020_Planet._Sci._J._1_69.pdf",
+            "PDFs/Czajka_2023_Planet._Sci._J._4_137.pdf"
+        ]
+    },
+    {
+        "id": "2117",
+        "files": [
+            "PDFs/Deutsch_2021_Planet._Sci._J._2_213.pdf",
+            "PDFs/Lemelin_2021_Planet._Sci._J._2_103.pdf",
+            "PDFs/Schorghofer_2022_ApJL_927_L34.pdf"
+        ]
+    },
+    {
+        "id": "2114",
+        "files": [
+            "PDFs/Deutsch_2021_Planet._Sci._J._2_213.pdf"
+        ]
+    },
+    {
+        "id": "2282",
+        "files": [
+            "PDFs/Robbins_2022_Planet._Sci._J._3_274.pdf"
+        ]
+    },
+    {
+        "id": "1007",
+        "files": [
+            "PDFs/Robbins_2022_Planet._Sci._J._3_274.pdf",
+            "PDFs/Cohen_2021_Planet._Sci._J._2_145.pdf"
+        ]
+    },
+    {
+        "id": "997",
+        "files": [
+            "PDFs/Wang_2021_ApJL_907_L32.pdf",
+            "PDFs/Poppe_2021_Planet._Sci._J._2_60.pdf"
+        ]
+    },
+    {
+        "id": "1473",
+        "files": [
+            "PDFs/Wang_2021_ApJL_907_L32.pdf"
+        ]
+    },
+    {
+        "id": "329",
+        "files": [
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf"
+        ]
+    },
+    {
+        "id": "1521",
+        "files": [
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf"
+        ]
+    },
+    {
+        "id": "969",
+        "files": [
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Ahrens_2021_Planet._Sci._J._2_38.pdf",
+            "PDFs/Chen_2022_ApJL_931_L24.pdf"
+        ]
+    },
+    {
+        "id": "1409",
+        "files": [
+            "PDFs/Losekamm_2022_Planet._Sci._J._3_229.pdf",
+            "PDFs/Morse_2021_Planet._Sci._J._2_167.pdf"
+        ]
+    },
+    {
+        "id": "867",
+        "files": [
+            "PDFs/Dauphas_2022_Planet._Sci._J._3_29.pdf",
+            "PDFs/Mathew_2019_ApJL_882_L17.pdf",
+            "PDFs/Runyon_2022_Planet._Sci._J._3_48.pdf"
+        ]
+    },
+    {
+        "id": "224",
+        "files": [
+            "PDFs/Dauphas_2022_Planet._Sci._J._3_29.pdf"
+        ]
+    },
+    {
+        "id": "236",
+        "files": [
+            "PDFs/Szalay_2020_ApJL_890_L11.pdf"
+        ]
+    },
+    {
+        "id": "821",
+        "files": [
+            "PDFs/Szalay_2020_ApJL_890_L11.pdf"
+        ]
+    },
+    {
+        "id": "1039",
+        "files": [
+            "PDFs/Szalay_2020_ApJL_890_L11.pdf"
+        ]
+    },
+    {
+        "id": "1845",
+        "files": [
+            "PDFs/Szalay_2020_ApJL_890_L11.pdf"
+        ]
+    },
+    {
+        "id": "453",
+        "files": [
+            "PDFs/Szalay_2020_ApJL_890_L11.pdf"
+        ]
+    },
+    {
+        "id": "959",
+        "files": [
+            "PDFs/Hamid_2023_Planet._Sci._J._4_88.pdf",
+            "PDFs/Nunn_2021_Planet._Sci._J._2_36.pdf",
+            "PDFs/Nunn_2022_Planet._Sci._J._3_219.pdf",
+            "PDFs/Fuqua_Haviland_2022_Planet._Sci._J._3_40.pdf"
+        ]
+    },
+    {
+        "id": "2036",
+        "files": [
+            "PDFs/Cohen_2021_Planet._Sci._J._2_145.pdf"
+        ]
+    },
+    {
+        "id": "332",
+        "files": [
+            "PDFs/Cohen_2021_Planet._Sci._J._2_145.pdf"
+        ]
+    },
+    {
+        "id": "2174",
+        "files": [
+            "PDFs/Bramson_2022_Planet._Sci._J._3_216.pdf"
+        ]
+    },
+    {
+        "id": "1152",
+        "files": [
+            "PDFs/Tyler_2021_Planet._Sci._J._2_70.pdf"
+        ]
+    },
+    {
+        "id": "1151",
+        "files": [
+            "PDFs/Tyler_2021_Planet._Sci._J._2_70.pdf",
+            "PDFs/Marusiak_2021_Planet._Sci._J._2_150.pdf"
+        ]
+    },
+    {
+        "id": "1178",
+        "files": [
+            "PDFs/Tyler_2021_Planet._Sci._J._2_70.pdf"
+        ]
+    },
+    {
+        "id": "2212",
+        "files": [
+            "PDFs/Tyler_2021_Planet._Sci._J._2_70.pdf"
+        ]
+    },
+    {
+        "id": "1273",
+        "files": [
+            "PDFs/Wilcoski_2022_Planet._Sci._J._3_99.pdf",
+            "PDFs/Lemelin_2021_Planet._Sci._J._2_103.pdf"
+        ]
+    },
+    {
+        "id": "645",
+        "files": [
+            "PDFs/Marusiak_2021_Planet._Sci._J._2_150.pdf"
+        ]
+    },
+    {
+        "id": "1964",
+        "files": [
+            "PDFs/Marusiak_2021_Planet._Sci._J._2_150.pdf"
+        ]
+    },
+    {
+        "id": "973",
+        "files": [
+            "PDFs/Marusiak_2021_Planet._Sci._J._2_150.pdf",
+            "PDFs/Nunn_2021_Planet._Sci._J._2_36.pdf",
+            "PDFs/Nunn_2022_Planet._Sci._J._3_219.pdf",
+            "PDFs/Fuqua_Haviland_2022_Planet._Sci._J._3_40.pdf"
+        ]
+    },
+    {
+        "id": "627",
+        "files": [
+            "PDFs/Marusiak_2021_Planet._Sci._J._2_150.pdf"
+        ]
+    },
+    {
+        "id": "1427",
+        "files": [
+            "PDFs/Marusiak_2021_Planet._Sci._J._2_150.pdf"
+        ]
+    },
+    {
+        "id": "331",
+        "files": [
+            "PDFs/Nie_2019_ApJL_884_L48.pdf"
+        ]
+    },
+    {
+        "id": "966",
+        "files": [
+            "PDFs/Nie_2019_ApJL_884_L48.pdf",
+            "PDFs/Asphaug_2021_Planet._Sci._J._2_200.pdf",
+            "PDFs/Kegerreis_2022_ApJL_937_L40.pdf",
+            "PDFs/Mathew_2019_ApJL_882_L17.pdf"
+        ]
+    },
+    {
+        "id": "419",
+        "files": [
+            "PDFs/N\u00e9non_2020_Planet._Sci._J._1_69.pdf"
+        ]
+    },
+    {
+        "id": "1241",
+        "files": [
+            "PDFs/Asphaug_2021_Planet._Sci._J._2_200.pdf"
+        ]
+    },
+    {
+        "id": "767",
+        "files": [
+            "PDFs/Kegerreis_2022_ApJL_937_L40.pdf"
+        ]
+    },
+    {
+        "id": "2288",
+        "files": [
+            "PDFs/R\u00fcsch_2023_Planet._Sci._J._4_126.pdf",
+            "PDFs/Boazman_2022_Planet._Sci._J._3_275.pdf"
+        ]
+    },
+    {
+        "id": "2284",
+        "files": [
+            "PDFs/Czajka_2023_Planet._Sci._J._4_137.pdf"
+        ]
+    },
+    {
+        "id": "2285",
+        "files": [
+            "PDFs/Czajka_2023_Planet._Sci._J._4_137.pdf"
+        ]
+    },
+    {
+        "id": "2004",
+        "files": [
+            "PDFs/Crandall_2019_ApJ_887_27.pdf"
+        ]
+    },
+    {
+        "id": "2092",
+        "files": [
+            "PDFs/Schorghofer_2022_ApJL_927_L34.pdf"
+        ]
+    },
+    {
+        "id": "1491",
+        "files": [
+            "PDFs/Xu_2020_ApJL_902_L30.pdf"
+        ]
+    },
+    {
+        "id": "827",
+        "files": [
+            "PDFs/Xu_2020_ApJL_902_L30.pdf"
+        ]
+    },
+    {
+        "id": "1974",
+        "files": [
+            "PDFs/Xu_2020_ApJL_902_L30.pdf"
+        ]
+    },
+    {
+        "id": "1997",
+        "files": [
+            "PDFs/Xu_2020_ApJL_902_L30.pdf"
+        ]
+    },
+    {
+        "id": "1476",
+        "files": [
+            "PDFs/Xu_2020_ApJL_902_L30.pdf"
+        ]
+    },
+    {
+        "id": "1975",
+        "files": [
+            "PDFs/Xu_2020_ApJL_902_L30.pdf"
+        ]
+    },
+    {
+        "id": "1499",
+        "files": [
+            "PDFs/Xu_2020_ApJL_902_L30.pdf"
+        ]
+    },
+    {
+        "id": "971",
+        "files": [
+            "PDFs/Fuqua_Haviland_2022_Planet._Sci._J._3_40.pdf"
+        ]
+    },
+    {
+        "id": "797",
+        "files": [
+            "PDFs/Chuang_2022_Planet._Sci._J._3_231.pdf"
+        ]
+    },
+    {
+        "id": "1474",
+        "files": [
+            "PDFs/Mathew_2019_ApJL_882_L17.pdf"
+        ]
+    },
+    {
+        "id": "1244",
+        "files": [
+            "PDFs/Mathew_2019_ApJL_882_L17.pdf"
+        ]
+    },
+    {
+        "id": "1324",
+        "files": [
+            "PDFs/Wang_2023_ApJ_948_113.pdf"
+        ]
+    },
+    {
+        "id": "1668",
+        "files": [
+            "PDFs/Wang_2023_ApJ_948_113.pdf"
+        ]
+    },
+    {
+        "id": "2315",
+        "files": [
+            "PDFs/Wang_2023_ApJ_948_113.pdf"
+        ]
+    },
+    {
+        "id": "283",
+        "files": [
+            "PDFs/Wang_2023_ApJ_948_113.pdf"
+        ]
+    },
+    {
+        "id": "2094",
+        "files": [
+            "PDFs/Wang_2023_ApJ_948_113.pdf"
+        ]
+    },
+    {
+        "id": "2299",
+        "files": [
+            "PDFs/Liu_2023_Planet._Sci._J._4_133.pdf"
+        ]
+    },
+    {
+        "id": "2238",
+        "files": [
+            "PDFs/Liu_2023_Planet._Sci._J._4_133.pdf"
+        ]
+    },
+    {
+        "id": "1038",
+        "files": [
+            "PDFs/Liu_2023_Planet._Sci._J._4_133.pdf"
+        ]
+    }
+]

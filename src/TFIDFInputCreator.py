@@ -1,11 +1,12 @@
 import json
 from sklearn.feature_extraction.text import TfidfVectorizer
+import fitz
 
 class TFIDFInputCreator:
 
     def __init__(self):
-        self.COMMON_WORDS = ['for', "by", "would", "also", "to", 'and', 'the', 'this', "of", "the", "on", "as", "with", "our", "are", "is"]
-        self.words_quantity = 30
+        self.COMMON_WORDS = ['et', 'al', 'in', 'be', 'at', 'has', 'that', 'can', 'was', 'its', 'both', 'may', 'we', 'not', 'will', 'or', 'it', 'they', 'than', 'these', 'however', 'co', 'from', 'an', 'ah', 'for', "by", "would", "also", "to", 'and', 'the', 'this', "of", "the", "on", "as", "with", "our", "are", "is"]
+        self.words_quantity = 50
         self.keywords_by_word = []
 
     def generate_tf_idf(self, texts):
@@ -67,8 +68,15 @@ class TFIDFInputCreator:
 
         for file_path, file_input in files_input.items():
             try:
-                file = json.load(open(file_path))
-                text_modified = self.generate_tf_idf([file['text']])
+                pdf_document = fitz.open('data/' + file_path)
+                full_text = []
+                for page_number in range(len(pdf_document)):
+                    page = pdf_document[page_number]
+                    text = page.get_text()
+
+                    full_text.append(text)
+                
+                text_modified = self.generate_tf_idf([full_text[0]])
                 if text_modified[0] not in texts:
                     texts.append(text_modified[0])
                     keywords_by_text.append(file_input)
