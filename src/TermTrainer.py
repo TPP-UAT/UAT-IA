@@ -106,6 +106,7 @@ class TermTrainer:
         texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files, training_input_creator)
 
         if len(keywords_by_text):
+            print("Training model for term: ", term_id)
             model = self.generate_model_for_group_of_terms(texts, keywords_by_text)
 
             self.trained_models.add_model_for_term_children(term_id, model)
