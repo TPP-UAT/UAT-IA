@@ -1,5 +1,0 @@
-{
-  "title": "The lunar theory ELP2000 revisited",
-  "text": "The construction of the complete lunar theory ELP goes back to the 1980s. Among all the components which form the solution, planetary perturbations contribute mainly to its deficiency. A new solution has been built that makes use of the planetary perturbations (MPP01) constructed recently by (Bidart 2000). After several transformations and tests, this new solution is called ELP/MPP02. Fitting the constants and the reference frame, ELP/MPP02 has been extensively compared to various JPL ephemerides and mainly DE405/DE406 (Standish 1998) to test its accuracy on a short time interval of one century and on a long time interval covering several millennia. Compared to ELP, over a few centuries, a significant improvement of the precision - in particular on the radius vector - is put in evidence. On the long range, the planetary contributions with long periods are noticeably improved. Taking advantage of the partials included in ELP, this new solution is fitted directly to LLR observations. Our future ephemerides shall be based on this contribution using our LLR fits.",
-  "keywords": ["Lunar theory"]
-}

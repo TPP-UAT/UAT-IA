@@ -1,5 +1,0 @@
-{
-  "title": "The Main Problem of Lunar Orbit Revisited",
-  "text": "A novel algorithm based on the Lindstedt-Poincaré method is proposed to construct an analytical solution of the lunar orbit. Based on the analytical solution, a numerical fitting algorithm is proposed to improve the coefficients of the analytical solution so that its accuracy can reach the level of a few kilometers within 20 yr. By fitting our solution to the long-term JPL ephemerides, we are able to recover the receding speed of the Moon from the Earth due to tidal effects. The proposed algorithm also provides a general way to treat the third-body perturbation in rectangular coordinates.",
-  "keywords": [ "Lunar theory", "Perturbation methods", "Orbital motion", "975", "1215", "1179"]
-}
