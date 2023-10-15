@@ -18,7 +18,7 @@ class TermFileMapper:
     def create_training_files(self, thesaurus):
         json_data = json.load(open('./data/pdfs.json'))
 
-        # TODO: Add term event if it doesnt have any document (e.g. Lunar Phase)
+        # TODO: Add term even if it doesnt have any document (e.g. Lunar Phase)
         for term in json_data:
             id = term['id']
             thesaurus_term = thesaurus.get_by_id(str(id))

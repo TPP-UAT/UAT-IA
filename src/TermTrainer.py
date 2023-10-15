@@ -14,7 +14,9 @@ from NormalInputCreator import NormalInputCreator
 class TermTrainer:
     def __init__(self, training_files):
         self.training_files = training_files
+        # { 'term_id': model }. This is for saving the models for each term_id in memory
         self.trained_models = TrainedModels()
+        # { 'term_id': { 'child_term_id': keyword_index } }. This is for retrieving the index of the term_id children id in the training input for the term_id
         self.keywords_by_term = {}
 
     # Getters
@@ -35,7 +37,7 @@ class TermTrainer:
         keywords_indexes = {}
         keywords = []
         for i in range(len(group_of_term_files)):
-            keywords_indexes[group_of_term_files[i]] = i
+            keywords_indexes[group_of_term_files[i].get_id()] = i
             keywords.append(group_of_term_files[i].get_name())
         self.keywords_by_term[term_id] = keywords_indexes
 
@@ -46,12 +48,12 @@ class TermTrainer:
                 # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
                 if file_path not in files_input:
                     files_input[file_path] = [0] * len(group_of_term_files)
-                files_input[file_path][keywords_indexes[term_files]] = 1
+                files_input[file_path][keywords_indexes[term_files.get_id()]] = 1
 
         texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
         return texts, keywords_by_text, keywords_indexes
 
-    def generate_model_for_group_of_terms(self, texts, keywords_by_text):
+    def generate_model_for_group_of_terms(self, texts, keywords_by_text, term_id):
         number_of_categories = len(keywords_by_text[0])
         # Tokenización
         tokenizer = Tokenizer()
@@ -107,7 +109,7 @@ class TermTrainer:
 
         if len(keywords_by_text):
             print("Training model for term: ", term_id)
-            model = self.generate_model_for_group_of_terms(texts, keywords_by_text)
+            model = self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id)
 
             self.trained_models.add_model_for_term_children(term_id, model)
 
@@ -115,6 +117,7 @@ class TermTrainer:
         children = thesaurus.get_by_id(term_id).get_children()
         if not children:
             return
+        
         group_of_term_files = []
         for child_id in children:
             term_file = self.training_files.get_term_file_with_children_files(child_id)
