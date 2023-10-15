@@ -37,12 +37,17 @@ class TermTrainer:
         keywords_indexes = {}
         keywords = []
         for i in range(len(group_of_term_files)):
-            keywords_indexes[group_of_term_files[i].get_id()] = i
-            keywords.append(group_of_term_files[i].get_name())
+            # Check if the term_files is None. If it is, it means that the term doesn't have files
+            if group_of_term_files[i] is not None:
+                keywords_indexes[group_of_term_files[i].get_id()] = i
+                keywords.append(group_of_term_files[i].get_name())
         self.keywords_by_term[term_id] = keywords_indexes
 
         files_input = {}
         for term_files in group_of_term_files:
+            # Check if the term_files is None. If it is, it means that the term doesn't have files
+            if term_files is None:
+                continue
             files_paths = term_files.get_files_paths()
             for file_path in files_paths:
                 # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
