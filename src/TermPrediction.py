@@ -14,7 +14,7 @@ class TermPrediction:
         predicted_ids = []
         for prediction in predictions:
             term = prediction.get_term()
-            predicted_ids.append(term.get_id())
+            predicted_ids.append(term)
         return predicted_ids
 
     def get_predictions(self, threshold, predictions, keywords):
