@@ -1,14 +1,12 @@
-import json
 import tensorflow as tf
+import numpy as np
 from keras.models import Sequential
 from keras.layers import Embedding, LSTM, Dense, Flatten, Dropout, BatchNormalization
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
-import numpy as np
 from TrainedModels import TrainedModels
-from NormalInputCreator import NormalInputCreator
 
 class TermTrainer:
     def __init__(self, training_files):
@@ -135,6 +133,10 @@ class TermTrainer:
             group_of_term_files.append(term_file)
         
         self.train_group(term_id, group_of_term_files, training_input_creator)
+
+        # Avoid recurivity if the term_id is the root (id = 1)
+        if term_id == '1':
+            return
 
         for child_id in children:
             self.train_model_by_thesaurus(thesaurus, child_id, training_input_creator)

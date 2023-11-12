@@ -1,4 +1,5 @@
 import fitz
+from utils.articles_parser import get_full_text_from_file
 
 class NormalInputCreator:
     def create_input_arrays(self, files_input, keywords):
@@ -7,15 +8,7 @@ class NormalInputCreator:
 
         for file_path, file_input in files_input.items():
             try:
-                pdf_document = fitz.open('data/' + file_path)
-                full_text = []
-                for page_number in range(len(pdf_document)):
-                    page = pdf_document[page_number]
-                    text = page.get_text()
-
-                    full_text.append(text)
-                
-                pdf_document.close()
+                full_text = get_full_text_from_file(file_path)
                 texts.append(full_text)
                 keywords_by_text.append(file_input)
             except:
