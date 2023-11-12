@@ -14,6 +14,8 @@ class NormalInputCreator:
                     text = page.get_text()
 
                     full_text.append(text)
+                
+                pdf_document.close()
                 texts.append(full_text)
                 keywords_by_text.append(file_input)
             except:

@@ -5,6 +5,7 @@ class Term:
         self.children = []
         self.parents = []
         self.alt_names = []
+        self.is_deprecated = False
 
     # Getters
     def get_id(self):
@@ -18,6 +19,9 @@ class Term:
 
     def get_name(self):
         return self.name
+    
+    def get_is_deprecated(self):
+        return self.is_deprecated
 
     # Setters
     def set_name(self, name):
@@ -35,3 +39,6 @@ class Term:
     def get_by_id(self, id):
         if self.id == id:
             return self.name
+        
+    def set_is_deprecated(self, is_deprecated):
+        self.is_deprecated = is_deprecated

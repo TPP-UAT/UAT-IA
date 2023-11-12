@@ -16,12 +16,17 @@ class UATMapper:
                 attributes["name"] = term_values[index][0]["value"]
             if "altLabel" in key:
                 attributes["altNames"] = [value["value"] for value in term_values[index]]
-            # if "definition" in key:
-               # attributes["definition"] = term_values[index][0]["value"]
             if "broader" in key:
                 attributes["broader"] = [value["value"].split("/")[-1] for value in term_values[index]]
             if "narrower" in key:
                 attributes["narrower"] = [value["value"].split("/")[-1] for value in term_values[index]]
+
+            # Deprecated terms
+            if "deprecated" in key:
+                attributes["deprecated"] = True
+            if "label" in key:
+                attributes["name"] = term_values[index][0]["value"]
+    
         return attributes
 
     def map_json_to_term(self, json_key, json_terms):
@@ -33,6 +38,7 @@ class UATMapper:
             term.set_children(attributes["narrower"] if "narrower" in attributes else [])
             term.set_parents(attributes["broader"] if "broader" in attributes else [])
             term.set_alt_names(attributes["altNames"] if "altNames" in attributes else [])
+            term.set_is_deprecated(attributes["deprecated"] if "deprecated" in attributes else False)
 
         return term
 

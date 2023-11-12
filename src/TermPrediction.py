@@ -47,7 +47,7 @@ class TermPrediction:
         sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
 
         # Realizar las predicciones
-        predictions = model.predict(sequences_padded)
+        predictions = model(sequences_padded)
 
         prediction_threshold = 0.7
         predicted_terms = self.get_predictions(prediction_threshold, predictions, keywords)
@@ -59,8 +59,10 @@ class TermPrediction:
     # TODO no deberiamos necesitar un term_id inicial
     def predict_texts(self, texts, term_id, predicted_terms):
         model_for_term_children = self.trained_models.get_by_id(term_id)
+
         if not model_for_term_children:
             return
+    
         selected_terms, selected_children = self.predict_texts_with_model(
             texts, model_for_term_children,
             self.keywords_by_term.get(term_id, None)

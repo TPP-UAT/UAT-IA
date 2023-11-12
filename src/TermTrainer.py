@@ -10,7 +10,6 @@ import numpy as np
 from TrainedModels import TrainedModels
 from NormalInputCreator import NormalInputCreator
 
-
 class TermTrainer:
     def __init__(self, training_files):
         self.training_files = training_files
@@ -18,6 +17,9 @@ class TermTrainer:
         self.trained_models = TrainedModels()
         # { 'term_id': { 'child_term_id': keyword_index } }. This is for retrieving the index of the term_id children id in the training input for the term_id
         self.keywords_by_term = {}
+        # Quantity of models created
+        self.models_created = 0
+
 
     # Getters
     def get_trained_models(self):
@@ -25,6 +27,9 @@ class TermTrainer:
 
     def get_keywords_by_term(self):
         return self.keywords_by_term
+    
+    def get_models_created(self):
+        return self.models_created
     
     '''
         Creates the input data for the training as two arrays:
@@ -115,6 +120,7 @@ class TermTrainer:
         if len(keywords_by_text):
             print("Training model for term: ", term_id)
             model = self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id)
+            self.models_created += 1
 
             self.trained_models.add_model_for_term_children(term_id, model)
 
@@ -127,7 +133,7 @@ class TermTrainer:
         for child_id in children:
             term_file = self.training_files.get_term_file_with_children_files(child_id)
             group_of_term_files.append(term_file)
-
+        
         self.train_group(term_id, group_of_term_files, training_input_creator)
 
         for child_id in children:
