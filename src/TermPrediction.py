@@ -58,7 +58,6 @@ class TermPrediction:
 
     # TODO no deberiamos necesitar un term_id inicial
     def predict_texts(self, texts, term_id, predicted_terms):
-        print("term ID: ", term_id)
         model_for_term_children = self.trained_models.get_by_id(term_id)
 
         if not model_for_term_children:
