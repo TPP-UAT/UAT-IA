@@ -24,11 +24,15 @@ class Thesaurus:
         for term in self.terms:
             if name == term.get_name():
                 return term
+            
+    def get_active_fatherless_terms(self):
+        fatherless_terms = []
+        for term in self.terms.values():
+            if len(term.get_parents()) == 0 and term.get_is_deprecated() == False:
+                fatherless_terms.append(term.get_id())
+        return fatherless_terms
 
-    def print_names_and_ids(self):
-        for term_key, term_value in self.terms.items():
-            print("Id: ", term_key + " Name: " + term_value.get_name(), "Children: ", term_value.get_children())
-
+    # Setters
     def add_children_of_term(self, thesaurus, term):
         if len(term.get_children()) != 0:
             for child in term.get_children():
@@ -38,3 +42,7 @@ class Thesaurus:
 
     def add_term(self, term):
         self.terms[term.get_id()] = term
+
+    def print_names_and_ids(self):
+        for term_key, term_value in self.terms.items():
+            print("Id: ", term_key + " Name: " + term_value.get_name(), "Children: ", term_value.get_children())

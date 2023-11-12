@@ -2,6 +2,7 @@ import json
 import os
 import glob
 import tensorflow as tf
+from utils.pdfs_terms_parser import generate_json
 from TrainedModels import TrainedModels
 from UATMapper import UATMapper
 from TermFileMapper import TermFileMapper
@@ -10,6 +11,7 @@ from TermPrediction import TermPrediction
 from NormalInputCreator import NormalInputCreator
 from TFIDFInputCreator import TFIDFInputCreator
 from AbstractInputCreator import AbstractInputCreator
+import gc
 
 NORMAL_TRAIN = 0.55
 TFIDF_TRAIN = 0.45
@@ -25,7 +27,7 @@ def get_prediction_multiplier(input_creator):
     else:
         return 0
 
-def train(term_id, input_creator):
+def train(term_id, input_creator, training_files, branch_thesaurus):
     term_trainer = TermTrainer(training_files)
     term_trainer.train_model_by_thesaurus(branch_thesaurus, term_id, input_creator)
 
@@ -62,9 +64,22 @@ def save_term_trainer(term_trainer: TermTrainer):
     save_keywords_by_term(term_trainer.get_keywords_by_term())
 
 def save_keywords_by_term(keywords_by_term):
-    file = open("./models/keywords-by-term.json", "w")
-    json.dump(keywords_by_term, file)
-    file.close()
+    file_path = "./models/keywords-by-term.json"
+    
+    # Check if the file already exists
+    if os.path.exists(file_path):
+        # If the file exists, read the existing data
+        with open(file_path, "r") as file:
+            existing_data = json.load(file)
+        
+        # Update the existing data with new keywords_by_term
+        existing_data.update(keywords_by_term)
+    else:
+        existing_data = keywords_by_term
+
+    # Write the updated data back to the file
+    with open(file_path, "w") as file:
+        json.dump(existing_data, file)
 
 def save_trained_models(trained_models: TrainedModels):
     models = trained_models.get_models()
@@ -94,44 +109,47 @@ def load_trained_models():
 
     return trained_models
 
-if __name__ == '__main__':
-    mapper = UATMapper("./data/UAT.json")
-    thesaurus = mapper.map_to_thesaurus()
-
-    branch_thesaurus = thesaurus.get_branch('972')
+def train_branch(term_id):
+    branch_thesaurus = thesaurus.get_branch(term_id)
 
     term_file_mapper = TermFileMapper()
     term_file_mapper.create_training_files(branch_thesaurus)
 
     training_files = term_file_mapper.get_training_files()
-    term_files = training_files.get_term_files()
 
-    training_files.print_term_files()
+    term_trainer = train(term_id, NormalInputCreator(), training_files, branch_thesaurus)
 
-    print('----------------------------- Normal train ----------------------------')
-    test_term_id = "972"
+    save_term_trainer(term_trainer)
 
-    print("Training options: \n 1 - Train with files and save \n 2- Load existent model \n Insert option number: ")
+def generate_documents_json():
+    # Generate json file with terms associated to pdfs
+    generate_json("./data/PDFs")
+
+if __name__ == '__main__':
+    gc.set_debug(gc.DEBUG_SAVEALL)
+    # This term (modified a bit on the json) has 11 children that covers the whole thesaurus
+    mapper = UATMapper("./data/UAT-filtered.json")
+    thesaurus = mapper.map_to_thesaurus()
+
+    # Father terms: 104, 343, 486, 563, 739, 804, 847, 1145, 1476, 1529, 1583
+    initial_term_id = ['104', '343', '486', '563']
+    father_term_id = '343'
+
+    print("Training options: \n 1 - Change document files \n 2 - Train with files and save \n 3 - Load existent model \n Insert option number: ")
     training_option = input()
 
     # Select between training or loading model
     if (training_option == "1"):
-        term_trainer = train(test_term_id, NormalInputCreator())
-
-        # Obtain trained models and keywords_by_term
-        trained_models = term_trainer.get_trained_models()
-        keywords_by_term = term_trainer.get_keywords_by_term()
-        save_term_trainer(term_trainer)
+        generate_documents_json()
+    
     elif (training_option == "2"):
+        for term_id in initial_term_id:
+            train_branch(term_id)
+            gc.collect()
+    
+    elif (training_option == "3"):
         keywords_by_term = load_keywords_by_term()
         trained_models = load_trained_models()
+        predict(father_term_id, NormalInputCreator(), trained_models, keywords_by_term)
 
-    predict(test_term_id, NormalInputCreator(), trained_models, keywords_by_term)
-
-    """
-    print('----------------------------- TFIDF train -----------------------------')
-    train_and_predict(TFIDFInputCreator())
-    print('----------------------------- Abstract train -----------------------------')
-    train_and_predict(AbstractInputCreator())
-    """
     
