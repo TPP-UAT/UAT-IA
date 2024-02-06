@@ -1,4 +1,6 @@
 import tensorflow as tf
+import gc
+from keras import backend as K
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Embedding, LSTM, Dense, Flatten, Dropout, BatchNormalization
@@ -60,6 +62,12 @@ class TermTrainer:
 
         texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
         return texts, keywords_by_text, keywords_indexes
+        
+    def save_trained_model(self, term_id, model):
+        if model is not None:
+            model_save_path = f"./models/{term_id}.keras"
+            model.save(model_save_path)
+            del model
 
     def generate_model_for_group_of_terms(self, texts, keywords_by_text, term_id):
         number_of_categories = len(keywords_by_text[0])
@@ -104,23 +112,28 @@ class TermTrainer:
             batch_size = 8
             model.fit(train_data, train_labels, epochs=epochs, batch_size=batch_size,
                     validation_data=(test_data, test_labels), verbose=0)
+            
+             # Clearing memory
+            loss, accuracy = model.evaluate(test_data, test_labels)
+            K.clear_session()  # Clear Keras session
+            gc.collect()  # Perform garbage collection
 
             # Evaluar el modelo
-            loss, accuracy = model.evaluate(test_data, test_labels)
             print("Loss:", loss)
             print("Accuracy:", accuracy)
 
-            return model
+            self.save_trained_model(term_id, model)
+            
 
     def train_group(self, term_id, group_of_term_files, training_input_creator):
         texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files, training_input_creator)
 
         if len(keywords_by_text):
             print("Training model for term: ", term_id)
-            model = self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id)
+            self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id)
             self.models_created += 1
 
-            self.trained_models.add_model_for_term_children(term_id, model)
+            # self.trained_models.add_model_for_term_children(term_id, model)
 
     def train_model_by_thesaurus(self, thesaurus, term_id, training_input_creator):
         children = thesaurus.get_by_id(term_id).get_children()

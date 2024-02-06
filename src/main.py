@@ -16,12 +16,12 @@ if __name__ == '__main__':
     print("Training options: \n 1 - Change document/articles files \n 2 - Train with documents and save \n 3 - Predict with existent model \n Insert option number: ")
     training_option = input()
 
-    # Change document/articles files
+    # Change document/articles files for training the models
     if (training_option == "1"):
         # Generate json file with terms associated to pdfs
         generate_json("./data/PDFs")
     
-    # Train the models
+    # Train the models by initial term ids
     elif (training_option == "2"):
         # Father terms: 104, 343, 486, 563, 739, 804, 847, 1145, 1476, 1529, 1583
         # Root term: 1

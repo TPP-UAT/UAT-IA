@@ -80,5 +80,6 @@ class Predictor:
         keywords_by_term = self.load_keywords_by_term()
         trained_models = self.load_trained_models()
 
+        # TODO: Change file to make it dinamic
         abstract = get_abstract_from_file("prediction_files/aca3a8.pdf")
         self.predict_terms(self.initial_term_id, AbstractInputCreator(), trained_models, keywords_by_term, abstract)

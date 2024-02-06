@@ -15,7 +15,7 @@ class Trainer:
 
     ''' Save Methods '''
     def save_term_trainer(self, term_trainer: TermTrainer):
-        self.save_trained_models(term_trainer.get_trained_models())
+        # self.save_trained_models(term_trainer.get_trained_models())
         self.save_keywords_by_term(term_trainer.get_keywords_by_term())
 
     def save_keywords_by_term(self, keywords_by_term):
