@@ -15,7 +15,6 @@ class Trainer:
 
     ''' Save Methods '''
     def save_term_trainer(self, term_trainer: TermTrainer):
-        self.save_trained_models(term_trainer.get_trained_models())
         self.save_keywords_by_term(term_trainer.get_keywords_by_term())
 
     def save_keywords_by_term(self, keywords_by_term):
@@ -36,12 +35,6 @@ class Trainer:
         with open(file_path, "w") as file:
             json.dump(existing_data, file)
 
-    def save_trained_models(self, trained_models: TrainedModels):
-        models = trained_models.get_models()
-        for term_id, model in models.items():
-            if model is not None:
-                model_save_path = f"./models/{term_id}.keras"
-                model.save(model_save_path)
     ''' End Save Methods '''
 
     def train_by_term_id(self, term_id, input_creator, training_files, branch_thesaurus):

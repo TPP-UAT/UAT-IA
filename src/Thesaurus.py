@@ -1,3 +1,5 @@
+import heapq
+
 class Thesaurus:
     def __init__(self, name):
         self.terms = {}
@@ -46,3 +48,50 @@ class Thesaurus:
     def print_names_and_ids(self):
         for term_key, term_value in self.terms.items():
             print("Id: ", term_key + " Name: " + term_value.get_name(), "Children: ", term_value.get_children())
+
+    def find_shortest_path(self, start_id, end_id):
+        if start_id not in self.terms or end_id not in self.terms:
+            return None
+        
+        # Dijkstra initialization
+        distances = {term_id: float('inf') for term_id in self.terms}
+        distances[start_id] = 0
+        previous = {term_id: None for term_id in self.terms}
+        heap = [(0, start_id)]  # Heap de prioridad (distancia, term_id)
+
+        # Dijkstra algorithm
+        while heap:
+            current_distance, current_id = heapq.heappop(heap)
+            if current_id == end_id:
+                break
+
+            if current_distance > distances[current_id]:
+                continue
+
+            term = self.terms[current_id]
+
+            # Update the distances to the children
+            for child_id in term.children:
+                new_distance = current_distance + 1  # Peso de 1 para todas las conexiones
+                if new_distance < distances[child_id]:
+                    distances[child_id] = new_distance
+                    previous[child_id] = current_id
+                    heapq.heappush(heap, (new_distance, child_id))
+
+            # Update the distances to the parents
+            for parent_id in term.parents:
+                new_distance = current_distance + 1  # Peso de 1 para todas las conexiones
+                if new_distance < distances[parent_id]:
+                    distances[parent_id] = new_distance
+                    previous[parent_id] = current_id
+                    heapq.heappush(heap, (new_distance, parent_id))
+
+        # Reconstruct the path
+        path = []
+        current_id = end_id
+        while current_id:
+            path.append(current_id)
+            current_id = previous[current_id]
+
+        path.reverse()
+        return path if path[0] == start_id else None
