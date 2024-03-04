@@ -3,6 +3,11 @@ from transformers import BartForConditionalGeneration, BartTokenizer
 
 
 class SummarizeInputCreator:
+    def __init__(self):
+        self.folder_name = 'summarize'
+
+    def get_folder_name(self):
+        return self.folder_name
 
     def summarize_text(self, text):
         # Cargar el modelo y el tokenizador
@@ -21,8 +26,11 @@ class SummarizeInputCreator:
 
         for file_path, file_input in files_input.items():
             try:
+                print("---------------------------------")
                 file = json.load(open(file_path))
+                print("FILE: ", file)
                 summarized_text = self.summarize_text(file['text'])
+                print("SUMMARIZED TEXT: ", summarized_text)
                 texts.append(summarized_text)
                 keywords_by_text.append(file_input)
             except:

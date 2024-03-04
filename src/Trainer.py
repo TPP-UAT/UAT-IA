@@ -3,15 +3,18 @@ import json
 import os
 from TermFileMapper import TermFileMapper
 from TermTrainer import TermTrainer
-from TrainedModels import TrainedModels
 
 from InputCreators.NormalInputCreator import NormalInputCreator
 from InputCreators.AbstractInputCreator import AbstractInputCreator
+from InputCreators.TFIDFInputCreator import TFIDFInputCreator
 
 class Trainer:
     def __init__(self, inital_term_ids, thesaurus):
         self.initial_term_ids = inital_term_ids
         self.thesaurus = thesaurus
+        self.input_creators = [
+            NormalInputCreator(), TFIDFInputCreator(), AbstractInputCreator()
+        ]
 
     ''' Save Methods '''
     def save_term_trainer(self, term_trainer: TermTrainer):
@@ -51,9 +54,9 @@ class Trainer:
 
         training_files = term_file_mapper.get_training_files()
 
-        term_trainer = self.train_by_term_id(term_id, AbstractInputCreator(), training_files, branch_thesaurus)
-
-        self.save_term_trainer(term_trainer)
+        for input_creator in self.input_creators:
+            term_trainer = self.train_by_term_id(term_id, input_creator, training_files, branch_thesaurus)
+            self.save_term_trainer(term_trainer)
 
     # Entrypoint method
     def train(self):

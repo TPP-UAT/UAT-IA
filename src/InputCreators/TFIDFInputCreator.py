@@ -5,6 +5,10 @@ class TFIDFInputCreator:
     def __init__(self):
         self.COMMON_WORDS = ['et', 'al', 'in', 'be', 'at', 'has', 'that', 'can', 'was', 'its', 'both', 'may', 'we', 'not', 'will', 'or', 'it', 'they', 'than', 'these', 'however', 'co', 'from', 'an', 'ah', 'for', "by", "would", "also", "to", 'and', 'the', 'this', "of", "the", "on", "as", "with", "our", "are", "is"]
         self.keywords_by_word = []
+        self.folder_name = 'tf-idf'
+
+    def get_folder_name(self):
+        return self.folder_name
 
     def parse_keywords(self, keywords):
         for phrase in keywords:
@@ -17,7 +21,7 @@ class TFIDFInputCreator:
     def create_input_arrays(self, files_input, keywords):
         texts = []
         keywords_by_text = []
-        self.parse_keywords(keywords)
+        # self.parse_keywords(keywords)
 
         for file_path, file_input in files_input.items():
             try:
