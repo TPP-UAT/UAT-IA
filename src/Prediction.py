@@ -3,11 +3,11 @@ class Prediction:
         self.term = term
 
         # These are arrays because we can have multiple predictions for the same term
-        self.probabilities = [probability]
+        self.probabilities = [probability.numpy()]
         self.multipliers = [multiplier]
 
     def add_probability(self, probability):
-        self.probabilities.append(probability)
+        self.probabilities.append(probability.numpy())
 
     def add_multiplier(self, multiplier):
         self.multipliers.append(multiplier)
