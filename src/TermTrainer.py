@@ -1,11 +1,9 @@
 import tensorflow as tf
-import sys
+import os
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Embedding, LSTM, Dense, Flatten, Dropout, BatchNormalization, Bidirectional, Conv1D, GlobalMaxPooling1D
-from sklearn.utils.class_weight import compute_class_weight
 from keras.preprocessing.text import Tokenizer
-from sklearn.metrics import classification_report
 from keras.preprocessing.sequence import pad_sequences
 from keras.regularizers import l2
 from sklearn.model_selection import train_test_split
@@ -60,12 +58,13 @@ class TermTrainer:
                     files_input[file_path] = [0] * len(group_of_term_files)
                 files_input[file_path][keywords_indexes[term_files.get_id()]] = 1
 
+        print("Keywords: ", keywords)
         texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
         return texts, keywords_by_text, keywords_indexes
 
     # Print memory usage in function
     # @profile
-    def generate_model_for_group_of_terms(self, texts, keywords_by_text, term_id):
+    def generate_model_for_group_of_terms(self, texts, keywords_by_text, term_id, training_input_creator):
         number_of_categories = len(keywords_by_text[0])
         # Tokenización
         tokenizer = Tokenizer()
@@ -118,7 +117,7 @@ class TermTrainer:
             print("Accuracy:", accuracy)
 
             # Save the trained model
-            self.save_trained_model(term_id, model)
+            self.save_trained_model(term_id, model, training_input_creator.get_folder_name())
 
             # Remove the model from memory
             del model
@@ -128,7 +127,7 @@ class TermTrainer:
         
         if len(keywords_by_text):
             print("Training model for term: ", term_id)
-            self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id)
+            self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
             self.models_created += 1
 
 
@@ -153,7 +152,11 @@ class TermTrainer:
         for child_id in children:
             self.train_model_by_thesaurus(thesaurus, child_id, training_input_creator)
 
-    def save_trained_model(self, term_id, model):
+    def save_trained_model(self, term_id, model, folder_name):
+        # Create folder if it doesn't exist
+        if not os.path.exists('./models/' + folder_name):
+            os.makedirs('./models/' +  folder_name)
+
         if model is not None:
-            model_save_path = f"./models/{term_id}.keras"
+            model_save_path = f"./models/{folder_name}/{term_id}.keras"
             model.save(model_save_path)

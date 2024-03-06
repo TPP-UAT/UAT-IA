@@ -31,32 +31,35 @@ class TermPrediction:
                     # Create Prediction class. The [0] is because we only have one text
                     prediction_obj = Prediction(term, predictions[0][index], self.train_multiplier)
                     predictions_with_prob.append(prediction_obj)
+
             if len(predictions_with_prob):
                 term_predictions.append(predictions_with_prob)
         return term_predictions
 
     def predict_texts_with_model(self, texts, model, keywords):
-        # Tokenización
+        # Tokenization
         tokenizer = Tokenizer()
         tokenizer.fit_on_texts(texts)
 
         sequences = tokenizer.texts_to_sequences(texts)
 
-        # Convertir secuencias a vectores de longitud fija (rellenando con ceros si es necesario)
+        # Convert sequences to fixed length vectors (padding with zeros if necessary)
         max_sequence_length = 12
         sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
 
-        # Realizar las predicciones
+        # Make predictions
         predictions = model(sequences_padded)
 
+        # Generate predictions for term_ids that match the criteria
         prediction_threshold = 0.7
         predicted_terms = self.get_predictions(prediction_threshold, predictions, keywords)
 
+        # Find terms that may have predictions in the children
         selected_children_threshold = 0.5
         predicted_children_terms = self.get_predictions(selected_children_threshold, predictions, keywords)
+
         return predicted_terms, predicted_children_terms
 
-    # TODO no deberiamos necesitar un term_id inicial
     def predict_texts(self, texts, term_id, predicted_terms):
         model_for_term_children = self.trained_models.get_by_id(term_id)
 
@@ -67,6 +70,7 @@ class TermPrediction:
             texts, model_for_term_children,
             self.keywords_by_term.get(term_id, None)
         )
+
         if len(selected_children):
             selected_children_ids = self.get_predicted_ids(selected_children[0])
             predicted_terms.extend(selected_terms)

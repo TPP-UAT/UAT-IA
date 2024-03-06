@@ -6,28 +6,19 @@ from TrainedModels import TrainedModels
 from TermPrediction import TermPrediction
 from utils.articles_parser import get_abstract_from_file
 
+from utils.input_creators import get_prediction_multiplier
+
 from InputCreators.NormalInputCreator import NormalInputCreator
 from InputCreators.TFIDFInputCreator import TFIDFInputCreator
 from InputCreators.AbstractInputCreator import AbstractInputCreator
-
-NORMAL_TRAIN = 0.55
-TFIDF_TRAIN = 0.45
-ABSTRACT_TRAIN = 0.5
 
 class Predictor:
     def __init__(self, initial_term_id, thesaurus):
         self.initial_term_id = initial_term_id
         self.thesaurus = thesaurus
-
-    def get_prediction_multiplier(self, input_creator):
-        if isinstance(input_creator, NormalInputCreator):
-            return NORMAL_TRAIN
-        elif isinstance(input_creator, TFIDFInputCreator):
-            return TFIDF_TRAIN
-        elif isinstance(input_creator, AbstractInputCreator):
-            return ABSTRACT_TRAIN
-        else:
-            return 0
+        self.input_creators = [NormalInputCreator(), TFIDFInputCreator(), AbstractInputCreator()]
+        self.predictions = {}
+        self.predictions_by_term = {}
 
     ''' Load methods '''
     def load_keywords_by_term(self):
@@ -37,9 +28,9 @@ class Predictor:
         file.close()
         return keywords_by_term
 
-    def load_trained_models(self):
+    def load_trained_models(self, folder_name):
         models = {}
-        for model_path in glob.glob("./models/*.keras"):
+        for model_path in glob.glob("./models/" + folder_name + "/*.keras"):
             term_id = os.path.basename(model_path).replace(".keras", "")
             models[term_id] = tf.keras.models.load_model(model_path)
 
@@ -50,35 +41,61 @@ class Predictor:
         return trained_models
     ''' Finish Load methods '''
 
-    # TODO: No se deberia necesitar un term_id, tampoco en predict_texts()
     def predict_terms(self, term_id, input_creator, trained_models, keywords_by_term, abstract):
-        train_multiplier = self.get_prediction_multiplier(input_creator)
+        train_multiplier = input_creator
         term_predicton = TermPrediction(trained_models, keywords_by_term, train_multiplier)
 
         predicted_terms = []
-        predictions = term_predicton.predict_texts([abstract], term_id , predicted_terms)
-
-        print('----------------------------- Predictions ----------------------------')
-
-        if all(len(prediction) == 0 for prediction in predictions):
-            print("No prediction for the text")
-
-        else:
-            # First iterator if we have multiple texts to predict
-            for prediction in predictions:
-                # Second iterator if we have multiple predictions in same level
-                for predicted_term in prediction:
-                    term_id = predicted_term.get_term()
-                    probability = format(predicted_term.get_probability(), ".2f")
-                    term_name = self.thesaurus.get_by_id(term_id).get_name()
-                    print(f"Term: {term_name}, Probability: {probability}, Multiplier: {predicted_term.get_multiplier()}")
+        # First parameter is an array because we can have multiple texts to predict
+        predictions = term_predicton.predict_texts([abstract], term_id, predicted_terms)
 
         return predictions
+    
+    def print_predictions(self):
+        print('----------------------------- Predictions ----------------------------')
+
+        if len(self.predictions) == 0:
+            print("There are no predictions")
+
+        else:
+            for term_id, prediction in self.predictions.items():
+                print(f"Term: {term_id}, Probabilities: {prediction.get_probabilities()}, Multipliers: {prediction.get_multipliers()}")
+
+            for term_id, final_prediction in self.predictions_by_term.items():
+                print(f"Term: {term_id}, Probability: {final_prediction}")
+
+    def generate_predictions(self, predictions):
+        # Combine predictions from different input creators if the term is already in the predictions
+        for prediction in predictions:
+            for predicted_term in prediction:
+                if predicted_term.get_term() not in self.predictions:
+                    self.predictions[predicted_term.get_term()] = predicted_term
+                else:
+                    self.predictions[predicted_term.get_term()].add_probability(predicted_term.get_probabilities()[0])
+                    self.predictions[predicted_term.get_term()].add_multiplier(predicted_term.get_multipliers()[0])
+
+        # Generate prediction object with the final probabilities
+        final_predictions = {}
+        for term_id, prediction in self.predictions.items():
+            final_prediction = 0
+            for pred, multiplier in zip(prediction.get_probabilities(), prediction.get_multipliers()):
+                final_prediction += pred.numpy() * multiplier
+            final_predictions[term_id] = final_prediction
+
+        self.predictions_by_term = final_predictions
 
     # Entrypoint method
     def predict(self):
+        # The index of the keyword matches the position of the training input { 'term_id': index }
         keywords_by_term = self.load_keywords_by_term()
-        trained_models = self.load_trained_models()
+        abstract = get_abstract_from_file("prediction_files/ac5403.pdf")
 
-        abstract = get_abstract_from_file("prediction_files/aca3a8.pdf")
-        self.predict_terms(self.initial_term_id, AbstractInputCreator(), trained_models, keywords_by_term, abstract)
+        # Iterate through the input creators
+        for input_creator in self.input_creators:
+            trained_models = self.load_trained_models(input_creator.get_folder_name())
+            predictions = self.predict_terms(self.initial_term_id, get_prediction_multiplier(input_creator), trained_models, keywords_by_term, abstract)
+            print("------------------------")
+            print("Predictions: ", predictions)
+            self.generate_predictions(predictions)
+
+        self.print_predictions()
