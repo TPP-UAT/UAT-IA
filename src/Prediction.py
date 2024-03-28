@@ -7,7 +7,7 @@ class Prediction:
         self.multipliers = [multiplier]
 
     def add_probability(self, probability):
-        self.probabilities.append(probability.numpy())
+        self.probabilities.append(probability)
 
     def add_multiplier(self, multiplier):
         self.multipliers.append(multiplier)
