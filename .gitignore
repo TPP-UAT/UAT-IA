@@ -2,3 +2,6 @@
 *.pdf
 *.keras
 *.vscode
+data_scrapper.log
+*.json
+*checkpoint*
