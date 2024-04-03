@@ -2,3 +2,5 @@
 *.pdf
 *.keras
 *.vscode
+*.json
+*checkpoint*
