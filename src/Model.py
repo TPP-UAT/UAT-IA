@@ -18,8 +18,8 @@ class MyHyperModel(kt.HyperModel):
 
         # Define the optimizer
         model = Sequential()
-        model.add(Dense(units=hp_units, activation=hp_activation))
         model.add(Embedding(input_dim=self.vocab_size, output_dim=self.embedding_dim, input_length=self.max_sequence_length))
+        model.add(Dense(units=hp_units, activation=hp_activation))
         model.add(LSTM(128, return_sequences=True))
         model.add(LSTM(32))
         model.add(BatchNormalization())

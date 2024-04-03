@@ -70,7 +70,7 @@ class TermTrainer:
         sequences = tokenizer.texts_to_sequences(texts)
 
         # Convertir secuencias a vectores de longitud fija (rellenando con ceros si es necesario)
-        max_sequence_length = 12
+        max_sequence_length = self.get_max_texts_length(texts)
         sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
 
         # Verifica si tienes suficientes datos para dividir
@@ -140,6 +140,15 @@ class TermTrainer:
             if len(words) > max_sequence_length:
                 max_sequence_length = len(words)
         print("Max sequence length: ", max_sequence_length)
+        return max_sequence_length
+
+    def get_max_texts_length(self, texts):
+        # Count words in each text
+        max_sequence_length = 0
+        for text in texts:
+            words = text.split()
+            if len(words) > max_sequence_length:
+                max_sequence_length = len(words)
         return max_sequence_length
 
     def train_group(self, term_id, group_of_term_files, training_input_creator):
