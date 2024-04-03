@@ -2,6 +2,7 @@ import os
 import glob
 import json
 import tensorflow as tf
+from dotenv import load_dotenv
 from TrainedModels import TrainedModels
 from TermPrediction import TermPrediction
 from utils.articles_parser import get_abstract_from_file
@@ -24,6 +25,7 @@ class Predictor:
         ]
         self.predictions = {}
         self.predictions_by_term = {}
+        load_dotenv() 
 
     def print_predictions(self):
         print('----------------------------- Predictions ----------------------------')
@@ -70,6 +72,7 @@ class Predictor:
         return predictions
 
     def generate_predictions(self, predictions):
+        print("predictions", predictions)
         # Combine predictions from different input creators if the term is already in the predictions
         for prediction in predictions:
             for predicted_term in prediction:
@@ -94,7 +97,11 @@ class Predictor:
     def predict(self):
         # The index of the keyword matches the position of the training input { 'term_id': index }
         keywords_by_term = self.load_keywords_by_term()
+
+        file_to_predict = os.getenv('FILE_TO_PREDICT')
+        self.file_name_to_predict = file_to_predict
         abstract = get_abstract_from_file('prediction_files/' + self.file_name_to_predict + '.pdf')
+        print("abstract", abstract)
 
         # Iterate through the input creators
         for input_creator in self.input_creators:
