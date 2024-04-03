@@ -14,10 +14,11 @@ class MyHyperModel(kt.HyperModel):
         # Hyperparameters
         hp_units = hp.Int('units', min_value=32, max_value=512, step=32)
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-2, 1e-3, 1e-4])
+        hp_activation = hp.Choice('activation', values=['relu', 'sigmoid'])
 
         # Define the optimizer
         model = Sequential()
-        model.add(Dense(units=hp_units, activation='relu'))
+        model.add(Dense(units=hp_units, activation=hp_activation))
         model.add(Embedding(input_dim=self.vocab_size, output_dim=self.embedding_dim, input_length=self.max_sequence_length))
         model.add(LSTM(128, return_sequences=True))
         model.add(LSTM(32))
