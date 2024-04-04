@@ -5,3 +5,4 @@
 data_scrapper.log
 *.json
 *checkpoint*
+*.log
