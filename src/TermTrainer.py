@@ -48,6 +48,10 @@ class TermTrainer:
                 keywords.append(group_of_term_files[i].get_name())
         self.keywords_by_term[term_id] = keywords_indexes
 
+        # If it doesnt have keywords, the term id is not trainable
+        if len(keywords) == 0:
+            return [], [], {}
+
         files_input = {}
         for term_files in group_of_term_files:
             # Check if the term_files is None. If it is, it means that the term doesn't have files
@@ -79,8 +83,9 @@ class TermTrainer:
         sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
 
         # Verifica si tienes suficientes datos para dividir
-        if len(sequences_padded) < 2 or len(keywords_by_text) < 2:
-            print("Advertencia: No hay suficientes datos para realizar una división de entrenamiento y prueba significativa.")
+        if len(sequences_padded) <= 2 or len(keywords_by_text) <= 2:
+            print("Warning: Not enough data to perform a meaningful train-test split.")
+            self.log.warning(f"Not enough data to perform a meaningful train-test split for term ID: {term_id}")
         else:
             # Si tienes suficientes datos, realiza la división
             train_data, test_data, train_labels, test_labels = train_test_split(sequences_padded, keywords_by_text, test_size=0.2, random_state=42)
@@ -162,20 +167,29 @@ class TermTrainer:
 
     # @profile
     def train_model_by_thesaurus(self, thesaurus, term_id, training_input_creator):
+        # Check if the term is already trained
+        term_is_trained = False
+        folder_name = training_input_creator.get_folder_name()
+        if os.path.exists('./models/' + folder_name):
+            if os.path.exists(f"./models/{folder_name}/{term_id}.keras"):
+                self.log.info(f"Model for term {term_id} already exists")
+                term_is_trained = True
+
         children = thesaurus.get_by_id(term_id).get_children()
         if not children:
             return
         
-        group_of_term_files = []
-        for child_id in children:
-            term_file = self.training_files.get_term_file_with_children_files(child_id)
-            group_of_term_files.append(term_file)
-        # TODO: Remove id (and all it's children) from the thesaurus if it doesn't have files
-        
-        self.train_group(term_id, group_of_term_files, training_input_creator)
-        # Avoid recursivity if the term_id is the root (id = 1)
-        if term_id == '1':
-            return
+        if (not term_is_trained):
+            group_of_term_files = []
+            for child_id in children:
+                term_file = self.training_files.get_term_file_with_children_files(child_id)
+                group_of_term_files.append(term_file)
+            # TODO: Remove id (and all it's children) from the thesaurus if it doesn't have files
+            
+            self.train_group(term_id, group_of_term_files, training_input_creator)
+            # Avoid recursivity if the term_id is the root (id = 1)
+            if term_id == '1':
+                return
 
         for child_id in children:
             self.train_model_by_thesaurus(thesaurus, child_id, training_input_creator)
