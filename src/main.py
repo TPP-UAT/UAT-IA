@@ -33,7 +33,7 @@ Insert option number: """)
     elif (training_option == "2"):
         # Father terms: 104, 343, 486, 563, 739, 804, 847, 1145, 1476, 1529, 1583
         # Root term: 1
-        initial_term_ids = ['104']
+        initial_term_ids = ['1']
 
         trainer = Trainer(initial_term_ids, thesaurus)
         trainer.train()
@@ -41,19 +41,25 @@ Insert option number: """)
     # Predict with existent model
     elif (training_option == "3"):
         file_name = input("Insert the file name from the file to predict: ")
-        initial_term_id = '104'
+        initial_term_id = '1'
         
         predictor = Predictor(initial_term_id, thesaurus, file_name)
         predictor.predict()
 
     # Find shortest path between two terms
     elif (training_option == "4"):
-        start_term_id = input("Insert the ID from the first term: ")
-        end_term_id = input("Insert the ID from the second term: ")
+        while True:
+            start_term_id = input("Insert the ID from the first term (q for quit): ")
+            end_term_id = input("Insert the ID from the second term (q for quit): ")
 
-        shortest_path = thesaurus.find_shortest_path(start_term_id, end_term_id)
+            if start_term_id == 'q' or end_term_id == 'q':
+                sys.exit()
 
-        if shortest_path:
-            print("The shortest path is:", shortest_path)
-        else:
-            print("There's no path between the terms.")
+            shortest_path = thesaurus.find_shortest_path(start_term_id, end_term_id)
+
+            if shortest_path:
+                print("The shortest path is:", shortest_path)
+                print("------------------")
+            else:
+                print("There's no path between the terms.")
+                print("------------------")
