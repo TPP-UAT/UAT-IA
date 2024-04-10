@@ -30,3 +30,4 @@ class MyHyperModel(kt.HyperModel):
         model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
 
         return model
+    
