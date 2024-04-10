@@ -1,7 +1,10 @@
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from Prediction import Prediction
+import logging
 
+CHILDREN_THRESHOLD = 0.4
+PREDICTION_THRESHOLD = 0.5
 
 class TermPrediction:
 
@@ -9,6 +12,9 @@ class TermPrediction:
         self.trained_models = trained_models
         self.keywords_by_term = keywords_by_term
         self.train_multiplier = train_multiplier
+        # Logging, change log level if needed
+        logging.basicConfig(filename='predictor.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.log = logging.getLogger('my_logger')
 
     def get_predicted_ids(self, predictions):
         predicted_ids = []
@@ -37,6 +43,10 @@ class TermPrediction:
         return term_predictions
 
     def predict_texts_with_model(self, texts, model, keywords):
+        # Get model information
+        input_shape = model.layers[0].input_shape
+        dimension = input_shape[1]
+
         # Tokenization
         tokenizer = Tokenizer()
         tokenizer.fit_on_texts(texts)
@@ -44,23 +54,27 @@ class TermPrediction:
         sequences = tokenizer.texts_to_sequences(texts)
 
         # Convert sequences to fixed length vectors (padding with zeros if necessary)
-        max_sequence_length = 12
+        max_sequence_length = dimension
         sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
-
+        
         # Make predictions
         predictions = model(sequences_padded)
 
         # Generate predictions for term_ids that match the criteria
-        prediction_threshold = 0.7
+        prediction_threshold = PREDICTION_THRESHOLD
         predicted_terms = self.get_predictions(prediction_threshold, predictions, keywords)
 
         # Find terms that may have predictions in the children
-        selected_children_threshold = 0.5
+        selected_children_threshold = CHILDREN_THRESHOLD
         predicted_children_terms = self.get_predictions(selected_children_threshold, predictions, keywords)
 
         return predicted_terms, predicted_children_terms
 
     def predict_texts(self, texts, term_id, predicted_terms):
+
+        self.log.info(f"Started predicting for term: {term_id}")
+        print(f"Started predicting for term: {term_id}")
+        print(f"Predicted terms: {predicted_terms}")
         model_for_term_children = self.trained_models.get_by_id(term_id)
 
         if not model_for_term_children:
