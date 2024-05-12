@@ -115,21 +115,25 @@ class TermTrainer:
 
         # Search for the best hyperparameters
         my_hyper_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
-        tuner = kt.Hyperband(my_hyper_model, objective="val_accuracy", max_epochs = 10, 
-                     factor = 3, directory='tuner', project_name=term_id+'-'+training_input_creator.get_folder_name())
+        tuner = kt.BayesianOptimization(
+            my_hyper_model, 
+            objective="val_accuracy", 
+            max_trials=10,
+            max_retries_per_trial=0,
+            max_consecutive_failed_trials=3,
+            alpha=0.0001,
+            beta=2.6,
+            seed=None,
+            directory='tuner', 
+            project_name=term_id+'-'+training_input_creator.get_folder_name()
+        )
             
-        stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
-
-        tuner.search(train_data, train_labels, epochs=50, validation_split=0.2, callbacks=[stop_early])
+        tuner.search(train_data, train_labels, epochs=10, validation_split=0.2)
 
         # Get the optimal hyperparameters
         best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
 
-        self.log.info(f"""
-            The hyperparameter search is complete. The optimal number of units in the first densely-connected
-            layer is {best_hps.get('units')} and the optimal learning rate for the optimizer
-            is {best_hps.get('learning_rate')}.
-            """)
+        self.log.info(f"Finished. Optimal number of units: {best_hps.get('units')}. Optimal learning rate: {best_hps.get('learning_rate')}.")
 
         # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
         model = tuner.hypermodel.build(best_hps)
