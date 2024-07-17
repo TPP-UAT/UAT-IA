@@ -1,3 +1,4 @@
+import keras_tuner as kt
 from keras.models import Sequential
 from keras.layers import Embedding, LSTM, Dense, Dropout, BatchNormalization
 from keras.optimizers import Adam

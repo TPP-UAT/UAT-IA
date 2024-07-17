@@ -1,4 +1,5 @@
 import json
+import os
 from Thesaurus import Thesaurus
 from Term import Term
 
@@ -43,7 +44,10 @@ class UATMapper:
         return term
 
     def map_to_thesaurus(self):
-        json_data = json.load(open(self.file_name))
+        my_path = os.path.abspath(os.path.dirname(__file__))
+        path = os.path.join(my_path, self.file_name)
+        json_data = json.load(open(path))
+        #json_data = json.load(open(self.file_name))
 
         thesaurus = Thesaurus("UAT")
         for key, obj in json_data.items():

@@ -2,18 +2,16 @@ import fitz
 import re
 import json
 import os
+from Constants import pdfs_json
 
 PDFS_PATH = './PDFs'
 
 def write_document(concepts):
-    # Specify the output file path
-    output_file = "./data/pdfs.json"
-
     # Write the JSON data to the output file
-    with open(output_file, 'w') as json_file:
+    with open(pdfs_json, 'w') as json_file:
         json.dump(list(concepts.values()), json_file, indent=4)
 
-    print(f"JSON data saved to {output_file}")
+    print(f"JSON data saved to {pdfs_json}")
 
 def generate_json(pdf_directory):
     regex = r'Uniﬁed Astronomy Thesaurus concepts:\s*((?:[^;)]+\(\d+\);\s*)+[^;)]+\(\d+\))' # regex pattern to find URLs

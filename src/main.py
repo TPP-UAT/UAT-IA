@@ -4,6 +4,7 @@ from Predictor import Predictor
 from Trainer import Trainer
 from UATMapper import UATMapper
 from utils.pdfs_terms_parser import generate_json 
+from Constants import pdfs_directory
 
 from utils.articles_parser import get_full_text_from_file, get_abstract_from_file, get_tf_idf_words_from_file
 
@@ -13,6 +14,14 @@ if __name__ == '__main__':
     # This term (modified a bit on the json) has 11 children that covers the whole thesaurus
     mapper = UATMapper("./data/UAT-filtered.json")
     thesaurus = mapper.map_to_thesaurus()
+
+    # 1 - Change document/articles files: Toma de la carpeta todos los pdfs y hace el mappeo de sobre qué palabra 
+    # clave corresponde a qué pdf y eso lo guarda en un json llamado pdfs.json. Esto es para que cada vez que cambien 
+    # los archivos se re-genere el archivo
+    # 2 - Train with documents and save: Toma el pdfs.json para entrenar y guarda
+    # 3 - Predict with existent model: Toma todos los modelos y predice
+    # 4 - Find shortest path between two terms: Con lo que devuelve 3, calcula la distancia entre dos términos, si el
+    # el número es muy grande significa que predijo mal y están muy alejados
 
     print(
 """-----------------------------------------------
@@ -27,7 +36,7 @@ Insert option number: """)
     # Change document/articles files
     if (training_option == "1"):
         # Generate json file with terms associated to pdfs
-        generate_json("./data/PDFs")
+        generate_json(pdfs_directory)
     
     # Train the models
     elif (training_option == "2"):
@@ -63,3 +72,4 @@ Insert option number: """)
             else:
                 print("There's no path between the terms.")
                 print("------------------")
+                
