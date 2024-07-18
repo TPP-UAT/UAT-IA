@@ -1,10 +1,11 @@
 import fitz
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
+from Constants import data_directory
 
 # Retrieve the full text from an article
 def get_full_text_from_file(file_path):
-    pdf_document = fitz.open('data/' + file_path)
+    pdf_document = fitz.open(data_directory + file_path)
     full_text = []
     for page_number in range(len(pdf_document)):
         page = pdf_document[page_number]

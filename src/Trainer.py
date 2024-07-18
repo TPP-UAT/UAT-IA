@@ -3,6 +3,7 @@ import json
 import os
 from TermFileMapper import TermFileMapper
 from TermTrainer import TermTrainer
+from Constants import keywords_by_term_json
 
 from InputCreators.NormalInputCreator import NormalInputCreator
 from InputCreators.AbstractInputCreator import AbstractInputCreator
@@ -23,7 +24,7 @@ class Trainer:
         self.save_keywords_by_term(term_trainer.get_keywords_by_term())
 
     def save_keywords_by_term(self, keywords_by_term):
-        file_path = "./data/keywords-by-term.json"
+        file_path = keywords_by_term_json
         
         # Check if the file already exists
         if os.path.exists(file_path):

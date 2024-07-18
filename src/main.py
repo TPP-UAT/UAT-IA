@@ -4,7 +4,7 @@ from Predictor import Predictor
 from Trainer import Trainer
 from UATMapper import UATMapper
 from utils.pdfs_terms_parser import generate_json 
-from Constants import pdfs_directory
+from Constants import pdfs_directory, uat_file
 
 from utils.articles_parser import get_full_text_from_file, get_abstract_from_file, get_tf_idf_words_from_file
 

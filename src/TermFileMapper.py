@@ -1,6 +1,7 @@
 import json
 from TermFiles import TermFiles
 from TrainingFiles import TrainingFiles
+from Constants import pdfs_json
 
 class TermFileMapper:
     def __init__(self):
@@ -16,7 +17,7 @@ class TermFileMapper:
         self.training_files.add_term_files(term_files)
 
     def create_training_files(self, thesaurus):
-        json_data = json.load(open('./data/pdfs.json'))
+        json_data = json.load(open(pdfs_json))
 
         # TODO: Add term even if it doesnt have any document (e.g. Lunar Phase)
         for term in json_data:
