@@ -115,12 +115,12 @@ class TermTrainer:
 
         # Search for the best hyperparameters
         my_hyper_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
-        tuner = kt.Hyperband(my_hyper_model, objective="val_accuracy", max_epochs = 10, 
-                     factor = 3, directory='tuner', project_name=term_id+'-'+training_input_creator.get_folder_name())
+        tuner = kt.Hyperband(my_hyper_model, objective="val_accuracy", max_epochs = 1, 
+                     factor = 2, directory='tuner', project_name=term_id+'-'+training_input_creator.get_folder_name())
             
         stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5)
 
-        tuner.search(train_data, train_labels, epochs=50, validation_split=0.2, callbacks=[stop_early])
+        tuner.search(train_data, train_labels, epochs=10, validation_split=0.2, callbacks=[stop_early])
 
         # Get the optimal hyperparameters
         best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
