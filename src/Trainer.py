@@ -1,6 +1,9 @@
 import gc
 import json
 import os
+import multiprocessing
+import signal
+import sys
 from TermFileMapper import TermFileMapper
 from TermTrainer import TermTrainer
 
@@ -17,6 +20,7 @@ class Trainer:
             # TFIDFInputCreator(), 
             AbstractInputCreator()
         ]
+        self.processes = []
 
     ''' Save Methods '''
     def save_term_trainer(self, term_trainer: TermTrainer):
@@ -39,29 +43,39 @@ class Trainer:
         # Write the updated data back to the file
         with open(file_path, "w") as file:
             json.dump(existing_data, file)
-
     ''' End Save Methods '''
 
-    def train_by_term_id(self, term_id, input_creator, training_files, branch_thesaurus):
-        term_trainer = TermTrainer(training_files)
-        term_trainer.train_model_by_thesaurus(branch_thesaurus, term_id, input_creator)
-
-        return term_trainer
-
-    def train_branch(self, term_id):
-        branch_thesaurus = self.thesaurus.get_branch(term_id)
-
-        term_file_mapper = TermFileMapper()
-        term_file_mapper.create_training_files(branch_thesaurus)
-
-        training_files = term_file_mapper.get_training_files()
-
+    def train_by_term_id(self, term_id, training_files):
         for input_creator in self.input_creators:
-            term_trainer = self.train_by_term_id(term_id, input_creator, training_files, branch_thesaurus)
+            term_trainer = TermTrainer(training_files)
+            term_trainer.train_model_by_thesaurus(self.thesaurus, term_id, input_creator)
+
             self.save_term_trainer(term_trainer)
 
     # Entrypoint method
     def train(self):
-        for term_id in self.initial_term_ids:
-            self.train_branch(term_id)
-            gc.collect()
+        # Create training files
+        term_file_mapper = TermFileMapper()
+        term_file_mapper.create_training_files(self.thesaurus)
+
+        # Handle signal for Ctrl+C
+        original_sigint_handler = signal.signal(signal.SIGINT, self.signal_handler)
+
+        try:
+            # Launch processes sequentially
+            for term_id in term_file_mapper.get_training_files().get_term_files():
+                p = multiprocessing.Process(target=self.train_by_term_id, args=(term_id, term_file_mapper.get_training_files()))
+                self.processes.append(p)
+                p.start()
+                p.join()  # Wait for the subprocess to finish
+                gc.collect()
+        finally:
+            signal.signal(signal.SIGINT, original_sigint_handler)
+
+    # Method to allow the user to terminate the processes with Ctrl+C
+    def signal_handler(self, signal, frame):
+        print("Interruption detected, terminating processes...")
+        for p in self.processes:
+            if p.is_alive():
+                p.terminate()
+        sys.exit(0)
