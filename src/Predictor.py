@@ -101,7 +101,6 @@ class Predictor:
         file_to_predict = os.getenv('FILE_TO_PREDICT')
         self.file_name_to_predict = file_to_predict
         abstract = get_abstract_from_file('prediction_files/' + self.file_name_to_predict + '.pdf')
-        print("abstract", abstract)
 
         # Iterate through the input creators
         for input_creator in self.input_creators:

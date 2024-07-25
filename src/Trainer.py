@@ -13,8 +13,8 @@ class Trainer:
         self.initial_term_ids = inital_term_ids
         self.thesaurus = thesaurus
         self.input_creators = [
-            NormalInputCreator(), 
-            TFIDFInputCreator(), 
+            # NormalInputCreator(), 
+            # TFIDFInputCreator(), 
             AbstractInputCreator()
         ]
 
