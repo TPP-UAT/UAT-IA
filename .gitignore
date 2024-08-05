@@ -6,3 +6,5 @@ data_scrapper.log
 *.json
 *checkpoint*
 *.log
+.venv
+uat_ia.egg-info

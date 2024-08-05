@@ -5,6 +5,10 @@ from Trainer import Trainer
 from UATMapper import UATMapper
 from utils.pdfs_terms_parser import generate_json 
 
+import tensorflow as tf
+from tensorflow.python.compiler.tensorrt import trt_convert as trt
+
+
 from utils.articles_parser import get_full_text_from_file, get_abstract_from_file, get_tf_idf_words_from_file
 
 if __name__ == '__main__':
@@ -13,6 +17,11 @@ if __name__ == '__main__':
     # This term (modified a bit on the json) has 11 children that covers the whole thesaurus
     mapper = UATMapper("./data/UAT-filtered.json")
     thesaurus = mapper.map_to_thesaurus()
+
+    print("TensorFlow version:", tf.__version__)
+    print("Is built with CUDA:", tf.test.is_built_with_cuda())
+    print("GPU devices:", tf.config.experimental.list_physical_devices('GPU'))
+    print("TensorRT version:", trt._pywrap_py_utils.get_linked_tensorrt_version())
 
     print(
 """-----------------------------------------------

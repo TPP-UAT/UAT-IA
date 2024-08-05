@@ -5,10 +5,10 @@ import numpy as np
 from memory_profiler import profile
 import keras_tuner as kt
 import logging
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
-from keras import backend as backend
+from tensorflow.keras import backend as backend
 from Model import MyHyperModel
 
 class TermTrainer:
