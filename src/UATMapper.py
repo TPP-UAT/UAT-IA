@@ -43,7 +43,8 @@ class UATMapper:
         return term
 
     def map_to_thesaurus(self):
-        json_data = json.load(open(self.file_name))
+        with open(self.file_name, encoding='utf-8') as file:
+            json_data = json.load(file)
 
         thesaurus = Thesaurus("UAT")
         for key, obj in json_data.items():

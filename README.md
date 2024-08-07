@@ -11,8 +11,8 @@ This repo contains custom evals for the [OpenAI evals platform](https://github.c
 We highly recommend using pyenv to manage your python versions, you can install it using the following command:
 
 ```bash
-pyenv install 3.11
-pyenv shell 3.11
+pyenv install 3.10
+pyenv shell 3.10
 ```
 
 Then you can install the project using the following commands:

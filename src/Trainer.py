@@ -58,19 +58,10 @@ class Trainer:
         term_file_mapper = TermFileMapper()
         term_file_mapper.create_training_files(self.thesaurus)
 
-        # Handle signal for Ctrl+C
-        original_sigint_handler = signal.signal(signal.SIGINT, self.signal_handler)
-
-        try:
-            # Launch processes sequentially
-            for term_id in term_file_mapper.get_training_files().get_term_files():
-                p = multiprocessing.Process(target=self.train_by_term_id, args=(term_id, term_file_mapper.get_training_files()))
-                self.processes.append(p)
-                p.start()
-                p.join()  # Wait for the subprocess to finish
-                gc.collect()
-        finally:
-            signal.signal(signal.SIGINT, original_sigint_handler)
+        for term_id in term_file_mapper.get_training_files().get_term_files():
+            self.train_by_term_id(term_id, term_file_mapper.get_training_files())
+            p = multiprocessing.Process(target=self.train_by_term_id, args=(term_id, term_file_mapper.get_training_files()))
+            gc.collect()
 
     # Method to allow the user to terminate the processes with Ctrl+C
     def signal_handler(self, signal, frame):
