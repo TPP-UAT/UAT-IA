@@ -15,7 +15,7 @@ def write_document(concepts):
 
     print(f"JSON data saved to {output_file}")
 
-def generate_json(pdf_directory):
+def generate_json(pdf_directory, thesaurus):
     regex = r'Uniﬁed Astronomy Thesaurus concepts:\s*((?:[^;)]+\(\d+\);\s*)+[^;)]+\(\d+\))' # regex pattern to find URLs
     concepts_dict = {}  # Dictionary to store IDs and associated files
 
@@ -57,4 +57,12 @@ def generate_json(pdf_directory):
             # Close the PDF document
             pdf_document.close()
 
+    # If the thesaurus term is not present in any file, add it as an empty term
+    for thesaurus_term_id in thesaurus.get_terms():
+        concept_term = concepts_dict.get(thesaurus_term_id, None)
+        if concept_term == None:
+            concepts_dict[thesaurus_term_id] = {
+                                'id': thesaurus_term_id,
+                                'files': []
+                            }
     write_document(concepts_dict)

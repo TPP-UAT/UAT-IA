@@ -27,7 +27,7 @@ Insert option number: """)
     # Change document/articles files
     if (training_option == "1"):
         # Generate json file with terms associated to pdfs
-        generate_json("./data/PDFs")
+        generate_json("./data/PDFs", thesaurus)
     
     # Train the models
     elif (training_option == "2"):
