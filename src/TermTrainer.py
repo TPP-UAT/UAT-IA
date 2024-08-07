@@ -10,6 +10,7 @@ from keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
 from keras import backend as backend
 from Model import MyHyperModel
+from transformers import BertTokenizer, TFBertModel
 
 class TermTrainer:
     def __init__(self, training_files):
@@ -19,7 +20,7 @@ class TermTrainer:
         # Quantity of models created
         self.models_created = 0
         #Flag for making hyperparameter tuning
-        self.hyperparameter_tuning = True
+        self.hyperparameter_tuning = False
         # Logging, change log level if needed
         logging.basicConfig(filename='trainer.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         self.log = logging.getLogger('my_logger')
@@ -73,6 +74,18 @@ class TermTrainer:
         texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
         return texts, keywords_by_text, keywords_indexes
 
+
+    def tokenize(self, texts):
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+        return tokenizer(
+            texts,
+            max_length=128,
+            padding=True,
+            truncation=True,
+            return_tensors='tf'
+    )
+
     # Print memory usage in function
     # @profile
     def generate_model_for_group_of_terms(self, texts, keywords_by_text, term_id, training_input_creator):
@@ -82,36 +95,56 @@ class TermTrainer:
 
         number_of_categories = len(keywords_by_text[0])
 
-        # Tokenization
-        tokenizer = Tokenizer()
-        tokenizer.fit_on_texts(texts)
-        sequences = tokenizer.texts_to_sequences(texts)
-
-        # Convert sequences to fixed length vectors (padding with zeros if necessary)
-        max_sequence_length = self.get_max_texts_length(texts)
-        sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
-
         # Verify if you have enough data to split
-        if len(sequences_padded) <= 2 or len(keywords_by_text) <= 2:
+        if len(keywords_by_text) <= 2:
             print("Warning: Not enough data to perform a meaningful train-test split.")
             self.log.warning(f"Not enough data to perform a meaningful train-test split for term ID: {term_id}")
         else:
             # If you have enough data, perform the split
-            train_data, test_data, train_labels, test_labels = train_test_split(sequences_padded, keywords_by_text, test_size=0.2, random_state=42)
+            train_data, test_data, train_labels, test_labels = train_test_split(texts, keywords_by_text, test_size=0.2, random_state=42)
+            #print("Train data",type(train_data) )
 
-            # Convert the data to numpy arrays
-            train_labels = np.array(train_labels)
-            test_labels = np.array(test_labels)
+            train_encodings = self.tokenize(train_data)
+            test_encodings = self.tokenize(test_data)
 
-            # Build the model
-            vocab_size = len(tokenizer.word_index) + 1
-            embedding_dim = 128
+            train_dataset = tf.data.Dataset.from_tensor_slices((
+                dict(train_encodings),
+                train_labels
+            )).shuffle(100).batch(16)
 
-            if (self.hyperparameter_tuning):
-                model, hypermodel = self.tune_hp(term_id, training_input_creator, number_of_categories, max_sequence_length, train_data, test_data, train_labels, test_labels, vocab_size, embedding_dim)
-            else:
-                hypermodel = None
-                model = self.create_model(number_of_categories, max_sequence_length, vocab_size, embedding_dim, train_data, test_data, train_labels, test_labels)
+            test_dataset = tf.data.Dataset.from_tensor_slices((
+                dict(test_encodings),
+                test_labels
+            )).batch(16)
+
+            # Necessary input for using Bert layer
+            input_ids = tf.keras.Input(shape=(128,), dtype=tf.int32, name='input_ids')
+            attention_mask = tf.keras.Input(shape=(128,), dtype=tf.int32, name='attention_mask')
+
+
+            bert_model = TFBertModel.from_pretrained('bert-base-uncased')
+            bert_output = bert_model(input_ids, attention_mask=attention_mask)
+
+            # Get token [CLS]
+            cls_token = bert_output.last_hidden_state[:, 0, :]  # Resumen del texto
+
+            # Add layers
+            dense_layer = tf.keras.layers.Dense(128, activation='relu')(cls_token)
+            dropout_layer = tf.keras.layers.Dropout(0.3)(dense_layer)
+            output_layer = tf.keras.layers.Dense(number_of_categories, activation='sigmoid')(dropout_layer)
+
+            model = tf.keras.Model(inputs=[input_ids, attention_mask], outputs=output_layer)
+
+            model.compile(
+                optimizer=tf.keras.optimizers.Adam(learning_rate=3e-5),
+                loss="binary_crossentropy",
+                metrics=['accuracy']
+            )
+
+            model.fit(train_dataset, epochs=3, validation_data=test_dataset)
+
+            loss, accuracy = model.evaluate(test_dataset)
+            print(f'Test Accuracy: {accuracy}, Loss: {loss}')
 
             # Save the trained model
             self.save_trained_model(term_id, model, training_input_creator.get_folder_name())
