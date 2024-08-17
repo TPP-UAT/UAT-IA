@@ -19,7 +19,6 @@ if __name__ == '__main__':
     term_file_mapper = TermFileMapper()
     term_file_mapper.create_training_files(thesaurus)
 
-
     try:
         # Launch subprocesses sequentially
         for term_id in term_file_mapper.get_training_files().get_term_files():
