@@ -40,3 +40,13 @@ class TrainingFiles:
 
             files_paths = self.get_files_from_children(children, files_paths)
             return TermFiles(term_file.get_id(), term_file.get_name(), files_paths, term_file.get_children())
+
+    def to_dict(self):
+        # Convert the term_files to a serializable dictionary
+        return {
+            term_id: {
+                'name': term_file.get_name(),
+                'children': term_file.get_children(),
+                'files_paths': term_file.get_files_paths()
+            } for term_id, term_file in self.term_files.items()
+        }

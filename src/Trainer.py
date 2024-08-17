@@ -1,7 +1,7 @@
 import gc
 import json
 import os
-import multiprocessing
+import threading
 import signal
 import sys
 from TermFileMapper import TermFileMapper
@@ -12,15 +12,14 @@ from InputCreators.AbstractInputCreator import AbstractInputCreator
 from InputCreators.TFIDFInputCreator import TFIDFInputCreator
 
 class Trainer:
-    def __init__(self, inital_term_ids, thesaurus):
-        self.initial_term_ids = inital_term_ids
+    def __init__(self, thesaurus):
         self.thesaurus = thesaurus
         self.input_creators = [
             # NormalInputCreator(), 
             # TFIDFInputCreator(), 
             AbstractInputCreator()
         ]
-        self.processes = []
+        self.threads = []
 
     ''' Save Methods '''
     def save_term_trainer(self, term_trainer: TermTrainer):
@@ -45,28 +44,18 @@ class Trainer:
             json.dump(existing_data, file)
     ''' End Save Methods '''
 
-    def train_by_term_id(self, term_id, training_files):
-        for input_creator in self.input_creators:
-            term_trainer = TermTrainer(training_files)
-            term_trainer.train_model_by_thesaurus(self.thesaurus, term_id, input_creator)
-
-            self.save_term_trainer(term_trainer)
-
     # Entrypoint method
-    def train(self):
+    def train_by_term_id(self, term_id):
         # Create training files
         term_file_mapper = TermFileMapper()
         term_file_mapper.create_training_files(self.thesaurus)
 
-        for term_id in term_file_mapper.get_training_files().get_term_files():
-            self.train_by_term_id(term_id, term_file_mapper.get_training_files())
-            p = multiprocessing.Process(target=self.train_by_term_id, args=(term_id, term_file_mapper.get_training_files()))
+        for input_creator in self.input_creators:
+            term_trainer = TermTrainer(term_file_mapper.get_training_files())
+            term_trainer.train_model_by_thesaurus(self.thesaurus, term_id, input_creator)
+            self.save_term_trainer(term_trainer)
+
+            del term_trainer
             gc.collect()
 
-    # Method to allow the user to terminate the processes with Ctrl+C
-    def signal_handler(self, signal, frame):
-        print("Interruption detected, terminating processes...")
-        for p in self.processes:
-            if p.is_alive():
-                p.terminate()
-        sys.exit(0)
+
