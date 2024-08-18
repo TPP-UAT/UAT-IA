@@ -1,22 +1,22 @@
 import os
 import shutil
 
-# Ruta de la carpeta principal
+# Path to the main folder
 ruta_principal = "./PDFs"
 
-# Recorre todas las subcarpetas y archivos
+# Traverse all subfolders and files
 for subdir, _, archivos in os.walk(ruta_principal):
     if subdir == ruta_principal:
-        continue  # Saltar la carpeta principal
+        continue  # Skip the main folder
 
     for archivo in archivos:
-        # Ruta completa del archivo actual
+        # Full path of the current file
         ruta_archivo = os.path.join(subdir, archivo)
         
-        # Mover el archivo a la carpeta principal
+        # Move the file to the main folder
         shutil.move(ruta_archivo, ruta_principal)
 
-    # Eliminar la subcarpeta vacía
+    # Remove the empty subfolder
     os.rmdir(subdir)
 
-print("Archivos movidos exitosamente.")
+print("Files moved successfully.")
