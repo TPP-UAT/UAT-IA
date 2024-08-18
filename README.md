@@ -38,13 +38,13 @@ pip install -e .
 
 This creates a virtual environment, and install the dependencies called in the file `pyproject.toml`
 
-Then, just run the file `main-old.py` (Check that you're using the venv as interpreter)
+Then, just run the file `main-old.py` (Check that you're using the venv as interpreter).
+
+For the *options 2 and 3* you need a `.env` file with the variable `MODE` with the values "train" or "predict".
+
+Also, you need to create a docker volume, by using the following commands:
 
 Once installed, first you need to create a new image for the app. This can be made writing:
-
-For the *third option* [WIP]
-
-For the *second option*, you need to create a docker volume, by using the following commands:
 
 ```bash
 docker build -t uat_ia .
@@ -67,3 +67,7 @@ For using this option, you need to create a folder `PDFs` inside the `data` fold
 If the articles are inside subfolders, you need to run the file `move_files.py`. That script removes all the files from subfolders and leaves them in the `PDFs` folder.
 
 Also, the file `UAT-filtered.json` must be inside the `data` folder.
+
+## Predict option
+
+For using this option, you need another environment variable called `FILE_TO_PREDICT` and the value is the file name from the article you want to predict the keywords. This article must be placed inside `data/prediction_files`.

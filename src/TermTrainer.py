@@ -2,9 +2,10 @@ import tensorflow as tf
 import gc
 import os
 import numpy as np
+import shutil
 from memory_profiler import profile
-import keras_tuner as kt
 import logging
+import keras_tuner as kt
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
@@ -183,7 +184,11 @@ class TermTrainer:
         eval_result = hypermodel.evaluate(test_data, test_labels)
         self.log.info(f"[test loss, test accuracy]: [{eval_result[0]}, {eval_result[1]}]")
 
-         # Delete the tuner to free memory
+        # Delete tuner folder
+        subdir = "tuner" + '/' + term_id+'-'+training_input_creator.get_folder_name()
+        shutil.rmtree(subdir)
+        
+        # Delete the tuner to free memory
         del tuner
         gc.collect()
 
