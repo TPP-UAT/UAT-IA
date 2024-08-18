@@ -99,7 +99,6 @@ class TermTrainer:
         else:
             # If you have enough data, perform the split
             train_data, test_data, train_labels, test_labels = train_test_split(sequences_padded, keywords_by_text, test_size=0.2, random_state=42)
-            #print("Train data",type(train_data) )
 
             # Convert the data to numpy arrays
             train_labels = np.array(train_labels)

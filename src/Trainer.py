@@ -16,7 +16,6 @@ class Trainer:
             # TFIDFInputCreator(), 
             AbstractInputCreator()
         ]
-        self.threads = []
 
     ''' Save Methods '''
     def save_term_trainer(self, term_trainer: TermTrainer):

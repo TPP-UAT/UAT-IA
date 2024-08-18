@@ -95,10 +95,3 @@ class Thesaurus:
 
         path.reverse()
         return path if path[0] == start_id else None
-
-    def to_dict(self):
-        return {
-            'name': self.name,
-            'terms': {term_id: term.to_dict() for term_id, term in self.terms.items()}
-        }
-    
