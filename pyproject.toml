@@ -1,22 +1,11 @@
 [project]
 name = "uat_ia"
 version = "0.0.1"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.md"
 dependencies = [
-    "keras",
-    "keras-tuner",
-    "tensorflow==2.14.0",
-    "python-dotenv",
     "PyMuPDF",
-    "tensorflow",
-    "scikit-learn",
-    "scipy",
-    "matplotlib",
-    "memory_profiler",
-    "numpy"
 ]
 
 [project.urls]
 repository = "https://github.com/TPP-UAT/UAT-IA"
-

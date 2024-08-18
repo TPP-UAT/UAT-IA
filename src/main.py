@@ -13,8 +13,7 @@ if __name__ == '__main__':
 
     # Father terms: 104, 343, 486, 563, 739, 804, 847, 1145, 1476, 1529, 1583
     # Root term: 1
-    initial_term_ids = ['1']
-
+    
     # Create training files
     term_file_mapper = TermFileMapper()
     term_file_mapper.create_training_files(thesaurus)

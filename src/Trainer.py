@@ -1,9 +1,6 @@
 import gc
 import json
 import os
-import threading
-import signal
-import sys
 from TermFileMapper import TermFileMapper
 from TermTrainer import TermTrainer
 

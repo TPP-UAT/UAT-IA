@@ -8,3 +8,6 @@ data_scrapper.log
 *.log
 .venv
 uat_ia.egg-info
+
+!data/UAT-filtered.json
+!data/UAT-original.json
