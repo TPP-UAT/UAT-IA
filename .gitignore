@@ -11,3 +11,4 @@ uat_ia.egg-info
 
 !data/UAT-filtered.json
 !data/UAT-original.json
+!data/UAT-pretty.json

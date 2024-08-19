@@ -2,8 +2,20 @@ import fitz
 import re
 import json
 import os
+import logging
 
 PDFS_PATH = './PDFs'
+
+# Logging, change log level if needed
+logging.basicConfig(filename='file_generation.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger('my_logger')
+
+def count_files(pdf_directory):
+    count = 0
+    for filename in os.listdir(pdf_directory):
+        if filename.endswith(".pdf"):
+            count += 1
+    return count
 
 def write_document(concepts):
     # Specify the output file path
@@ -19,8 +31,15 @@ def generate_json(pdf_directory, thesaurus):
     regex = r'Uniﬁed Astronomy Thesaurus concepts:\s*((?:[^;)]+\(\d+\);\s*)+[^;)]+\(\d+\))' # regex pattern to find URLs
     concepts_dict = {}  # Dictionary to store IDs and associated files
 
+    file_count = count_files(pdf_directory)
+    log.info(f"Generating new file with {file_count} files.")
+
+    count = 0
     # Loop through all files in the directory
     for filename in os.listdir(pdf_directory):
+        if (count % 50 == 0):
+            log.info(f"Processing file {count} of {file_count}")
+        
         if filename.endswith(".pdf"):
             pdf_file = os.path.join(pdf_directory, filename)
             pdf_file_path = os.path.join(PDFS_PATH, filename)
@@ -56,6 +75,7 @@ def generate_json(pdf_directory, thesaurus):
 
             # Close the PDF document
             pdf_document.close()
+            count += 1
 
     # If the thesaurus term is not present in any file, add it as an empty term
     for thesaurus_term_id in thesaurus.get_terms():
