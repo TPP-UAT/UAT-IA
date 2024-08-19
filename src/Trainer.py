@@ -46,7 +46,6 @@ class Trainer:
     ''' End Save Methods '''
 
     def train_by_term_id(self, term_id, training_files):
-        print("----------------term_id: ", term_id)
         for input_creator in self.input_creators:
             term_trainer = TermTrainer(training_files)
             term_trainer.train_model_by_thesaurus(self.thesaurus, term_id, input_creator)
