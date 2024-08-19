@@ -216,8 +216,11 @@ class TermTrainer:
         return max_sequence_length
 
     def train_group(self, term_id, group_of_term_files, training_input_creator):
+        print("--------train group of term_id",term_id, "con el group_of_term_files anteriores")
         texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files, training_input_creator)
         
+        print("------ texts", texts, "\n \n \n ----------keywords_by_text", keywords_by_text)
+
         if len(keywords_by_text):
             print("Training model for term: ", term_id)
             self.log.info("------------------------------------------")
@@ -243,8 +246,8 @@ class TermTrainer:
             group_of_term_files = []
             for child_id in children:
                 term_file = self.training_files.get_term_file_with_children_files(child_id)
+                print("term_file name:", term_file.get_name(), "term_file id:", term_file.get_id(), "paths:",term_file.get_files_paths() )
                 group_of_term_files.append(term_file)
-            # TODO: Remove id (and all it's children) from the thesaurus if it doesn't have files
             
             self.train_group(term_id, group_of_term_files, training_input_creator)
             
