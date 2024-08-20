@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from DatabaseModels import Base
 
@@ -15,7 +15,7 @@ class Database:
         Base.metadata.create_all(self.engine)
 
     def query(self, query):
-        return self.session.execute(query).fetchall()
+        return self.session.execute(text(query)).fetchall()
 
     def add(self, instance):
         try:
