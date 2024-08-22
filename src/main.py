@@ -6,8 +6,9 @@ from dotenv import load_dotenv
 from UATMapper import UATMapper
 from TermFileMapper import TermFileMapper
 from Predictor import Predictor
-from Database import Database
-from DatabaseModels import File, Keyword
+from Database.Database import Database
+from Database.Keyword import Keyword
+from Database.File import File
 
 if __name__ == '__main__':
     gc.set_debug(gc.DEBUG_SAVEALL)
@@ -19,26 +20,22 @@ if __name__ == '__main__':
         database = Database(db_url)
         engine = database.get_engine()
 
-        # Verifica la conexión con una simple consulta
+        # Verifies connection to the database
         connection = engine.connect()
         print("Database connection successful.")
+
+        database.init_db()
+
+        print("Querying database...")
+
+        file = File(database)
+        new_file = file.add_file("abc126", "This is an abstract", "This is the full text")
+        print("file aaaa: ", new_file)
+        keyword = Keyword(database)
+        print("dsdsad: ")
+        keyword.add_keyword(1, "abc126", 1)
+
         connection.close()
     except Exception as e:
         print(f"Database connection failed: {e}")
 
-    database.init_db()
-
-    new_file = File(file_id='aac435', abstract='Example test.', full_text='Example test 2')
-    print("File ID: ", new_file.file_id)
-
-    try:
-        database.add(new_file)
-    except Exception as e:
-        print(f"Error: {e}")
-
-    print("Querying database...")
-    files = database.query('SELECT * FROM "Files"')
-    for file in files:
-        print("from db: ", file.file_id, file.abstract, file.full_text)
-
-    database.close()

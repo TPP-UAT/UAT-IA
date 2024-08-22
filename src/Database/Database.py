@@ -1,6 +1,8 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from DatabaseModels import Base
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
 
 def get_db_session(engine):
     Session = sessionmaker(bind=engine)
@@ -15,12 +17,11 @@ class Database:
         Base.metadata.create_all(self.engine)
 
     def query(self, query):
-        return self.session.execute(text(query)).fetchall()
+        return self.session.execute(query).fetchall()
 
     def add(self, instance):
         try:
             self.session.add(instance)
-            print("SESION: ", self.session.new)
             self.session.commit()
         except Exception as e:
             self.session.rollback()

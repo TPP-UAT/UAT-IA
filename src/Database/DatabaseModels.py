@@ -4,16 +4,16 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
-class File(Base):
-    __tablename__ = 'Files'
+class FileModel(Base):
+    __tablename__ = 'files'
     file_id = Column(String(255), primary_key=True)
     abstract = Column(Text)
     full_text = Column(Text)
-    keywords = relationship("Keyword", back_populates="file")
+    keywords = relationship("KeywordModel", back_populates="file")
 
-class Keyword(Base):
-    __tablename__ = 'Keywords'
+class KeywordModel(Base):
+    __tablename__ = 'keywords'
     keyword_id = Column(Integer, primary_key=True)
-    file_id = Column(String(255), ForeignKey('Files.file_id'))
-    order = Column(Integer, name="Order")
-    file = relationship("File", back_populates="keywords")
+    file_id = Column(String(255), ForeignKey('files.file_id'))
+    order = Column(Integer, name="order")
+    file = relationship("FileModel", back_populates="keywords")
