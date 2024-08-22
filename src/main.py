@@ -8,11 +8,14 @@ from TermFileMapper import TermFileMapper
 from Predictor import Predictor
 from Database import Database
 from DatabaseModels import File, Keyword
+from utils.pdfs_terms_parser import upload_data 
+
 
 if __name__ == '__main__':
     gc.set_debug(gc.DEBUG_SAVEALL)
     load_dotenv() # Load environment variables
     db_url = os.getenv('DB_URL')
+    mode = os.getenv('MODE')
 
     # Initialize database
     try:
@@ -28,6 +31,14 @@ if __name__ == '__main__':
 
     database.init_db()
 
+    if mode == "generate":
+        pdf_directory = "./data/PDFs"
+        mapper = UATMapper("./data/UAT-filtered.json")
+        thesaurus = mapper.map_to_thesaurus()
+        upload_data(pdf_directory, thesaurus, database)
+
+
+
     new_file = File(file_id='aac435', abstract='Example test.', full_text='Example test 2')
     print("File ID: ", new_file.file_id)
 
@@ -38,7 +49,7 @@ if __name__ == '__main__':
 
     print("Querying database...")
     files = database.query('SELECT * FROM "Files"')
-    for file in files:
-        print("from db: ", file.file_id, file.abstract, file.full_text)
+    #for file in files:
+        #print("from db: ", file.file_id, file.abstract, file.full_text)
 
     database.close()

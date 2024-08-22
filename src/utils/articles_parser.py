@@ -28,6 +28,19 @@ def get_abstract_from_file(file_path):
 
     return extracted_text
 
+def get_keywords_from_file(file_path):
+    regex = r'Uniﬁed Astronomy Thesaurus concepts:\s*((?:[^;)]+\(\d+\);\s*)+[^;)]+\(\d+\))' # regex pattern to find URLs
+    text = get_full_text_from_file(file_path)
+    terms = re.findall(regex, text)
+    ids = []
+    if len(terms) > 0:
+        concepts = terms[0]  # Assuming there's only one match per page
+
+        # Find the IDs in the terms
+        ids = re.findall(r'\((\d+)\)', concepts)
+    return ids
+    
+
 # Retrieve the top 50 words from an article based on TF-IDF
 # keywords_by_word is a list of words that will be given a higher TF-IDF value, [] if not used
 def get_tf_idf_words_from_file(file_path, keywords_by_word):
