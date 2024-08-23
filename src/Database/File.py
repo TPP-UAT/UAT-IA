@@ -27,8 +27,8 @@ class File():
         """Create a new file in the database."""
         new_file = FileModel(file_id=file_id, abstract=abstract, full_text=full_text)
         try:
-            self.database.add(new_file)
-            print(f"File with ID {file_id} added successfully.")
+            result = self.database.add(new_file)
+            return result
         except Exception as e:
             self.session.rollback()
             print(f"Error adding file: {e}")

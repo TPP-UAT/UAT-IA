@@ -42,20 +42,21 @@ class Keyword():
 
         return result
     
-    # def get_abstracts_by_keyword_id(self, keyword_id):
-    #     """Get all abstracts associated with a given keyword_id."""
-    #     from Database.DatabaseModels import FileModel
-    #     abstracts = []
-    #     query = (
-    #         select(FileModel.abstract)
-    #         .join(KeywordModel, FileModel.file_id == KeywordModel.file_id)
-    #         .where(KeywordModel.keyword_id == keyword_id)
-    #     )
+    def get_abstracts_by_keyword_id(self, keyword_id):
+        """Get all abstracts associated with a given keyword_id."""
+        from Database.DatabaseModels import FileModel
+        abstracts = []
+        query = (
+            select(FileModel.abstract)
+            .join(KeywordModel, FileModel.file_id == KeywordModel.file_id)
+            .where(KeywordModel.keyword_id == keyword_id)
+        )
 
-    #     results = self.database.query(query)
+        results = self.database.query(query)
 
-    #     for result in results:
-    #         abstract = result[0]
-    #         abstracts.append(abstract)
+        for result in results:
+            abstract = result[0]
+            print("-------------Abstract: ", abstract)
+            abstracts.append(abstract)
         
-    #     return abstracts
+        return abstracts

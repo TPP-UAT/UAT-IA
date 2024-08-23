@@ -26,6 +26,7 @@ class Database:
         except Exception as e:
             self.session.rollback()
             print(f"Error adding instance: {e}")
+            return False
 
 
     def close(self):
