@@ -16,8 +16,8 @@ class Database:
     def init_db(self):
         Base.metadata.create_all(self.engine)
 
-    def query(self, query):
-        return self.session.execute(query).fetchall()
+    def query(self, query, fetch='all'):
+        return self.session.execute(query)
 
     def add(self, instance):
         try:

@@ -4,6 +4,10 @@ import json
 import os
 import logging
 
+from Database.File import File
+from Database.Keyword import Keyword
+from utils.articles_parser import get_abstract_from_file, get_full_text_from_file, get_keywords_from_file
+
 PDFS_PATH = './PDFs'
 
 # Logging, change log level if needed
@@ -86,3 +90,36 @@ def generate_json(pdf_directory, thesaurus):
                                 'files': []
                             }
     write_document(concepts_dict)
+
+def upload_data(pdf_directory, thesaurus, database):
+    file_db = File(database)
+    keyword_db = Keyword(database)
+
+    for filename in os.listdir(pdf_directory):
+        if filename.endswith(".pdf"):
+            file_id = filename.rstrip('.pdf')
+            pdf_file_path = os.path.join(pdf_directory, filename)
+            file_path = os.path.join("PDFs", filename)
+
+            # Open the PDF file
+            pdf_document = fitz.open(pdf_file_path)
+
+            # Get the necessary information from the PDF file
+            full_text = get_full_text_from_file(file_path)
+            keywords = get_keywords_from_file(file_path)
+            abstract = get_abstract_from_file(file_path)
+
+            file_db.add(file_id=file_id, abstract=abstract, full_text=full_text)
+
+            for keyword in keywords:
+                keyword_db.add(file_id=file_id, keyword_id=keyword, order=1)
+
+            pdf_document.close()
+
+    # Iterates over all the keywords_ids of the thesaurus and if does not exist, saves the keywords with empty documents
+    all_keywords_id = list(thesaurus.get_terms().keys())
+    for keyword_id in all_keywords_id:
+        count = keyword_db.get_count_by_keyword_id(keyword_id)
+
+        if count == 0:
+            keyword_db.add(keyword_id=keyword_id, file_id=None, order=2)

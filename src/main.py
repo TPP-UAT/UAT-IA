@@ -7,13 +7,13 @@ from UATMapper import UATMapper
 from TermFileMapper import TermFileMapper
 from Predictor import Predictor
 from Database.Database import Database
-from Database.Keyword import Keyword
-from Database.File import File
+from utils.pdfs_terms_parser import upload_data 
 
 if __name__ == '__main__':
     gc.set_debug(gc.DEBUG_SAVEALL)
     load_dotenv() # Load environment variables
     db_url = os.getenv('DB_URL')
+    mode = os.getenv('MODE')
 
     # Initialize database
     try:
@@ -28,12 +28,11 @@ if __name__ == '__main__':
 
         print("Querying database...")
 
-        file = File(database)
-        new_file = file.add_file("abc126", "This is an abstract", "This is the full text")
-        print("file aaaa: ", new_file)
-        keyword = Keyword(database)
-        print("dsdsad: ")
-        keyword.add_keyword(1, "abc126", 1)
+        if mode == "generate":
+            pdf_directory = "./data/PDFs"
+            mapper = UATMapper("./data/UAT-filtered.json")
+            thesaurus = mapper.map_to_thesaurus()
+            upload_data(pdf_directory, thesaurus, database)
 
         connection.close()
     except Exception as e:

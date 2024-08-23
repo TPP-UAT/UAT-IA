@@ -1,7 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy import select
+from sqlalchemy import func, select
 from Database.DatabaseModels import KeywordModel
 
 class Keyword():
@@ -9,7 +6,7 @@ class Keyword():
         """Initialize the Keyword instance with a session."""
         self.database = database
 
-    def add_keyword(self, keyword_id, file_id, order):
+    def add(self, keyword_id, file_id, order):
         """Create a new keyword in the database."""
         new_keyword = KeywordModel(keyword_id=keyword_id, file_id=file_id, order=order)
         try:
@@ -30,6 +27,20 @@ class Keyword():
             keywords.append(keyword)
         
         return keywords
+    
+    def get_by_keyword_id(self, keyword_id):
+        """Get a keyword by its keyword_id."""
+        query = select(KeywordModel).where(KeywordModel.keyword_id == keyword_id)
+
+        result = self.database.query(query).first()
+        return result
+    
+    def get_count_by_keyword_id(self, keyword_id):
+        """Get the number of keywords associated with a given keyword_id."""
+        query = select(func.count()).select_from(KeywordModel).filter(KeywordModel.keyword_id == keyword_id)
+        result = self.database.query(query).scalar()
+
+        return result
     
     # def get_abstracts_by_keyword_id(self, keyword_id):
     #     """Get all abstracts associated with a given keyword_id."""
