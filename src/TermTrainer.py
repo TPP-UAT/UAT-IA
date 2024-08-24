@@ -13,8 +13,8 @@ from tensorflow.keras import backend as backend
 from Model import MyHyperModel
 
 class TermTrainer:
-    def __init__(self, training_files):
-        self.training_files = training_files
+    def __init__(self, thesaurus):
+        self.thesaurus = thesaurus
         # { 'term_id': { 'child_term_id': keyword_index } }. This is for retrieving the index of the term_id children id in the training input for the term_id
         self.keywords_by_term = {}
         # Quantity of models created
@@ -42,37 +42,35 @@ class TermTrainer:
         - keywords_by_text: array of arrays of keywords for each text. 1 if it matches the keyword, 0 if not
         - keywords_indexes: The index of the keyword matches the position of the training input { 'term_id': index }
     '''
-    def create_data_input(self, term_id, group_of_term_files, training_input_creator):
+    def create_data_input(self, term_id, children, training_input_creator):
         # The index of the keyword matches the position of the training input { 'term_id': index }
-        # E.g. { '54': 0, '23': 1, '457': 2, '241': 3 }
+        # E.g. with term_id 104: {'102': 0, '1129': 1, '1393': 2, '661': 3}
         keywords_indexes = {}
         keywords = []
-        for i in range(len(group_of_term_files)):
-            # Check if the term_files is None. If it is, it means that the term doesn't have files
-            if group_of_term_files[i] is not None:
-                keywords_indexes[group_of_term_files[i].get_id()] = i
-                keywords.append(group_of_term_files[i].get_name())
+        for i in range(len(children)):
+            if children[i] is not None:
+                keywords_indexes[children[i]] = i
+                # TODO: CHECK THIS
+                # keywords.append(children[i].get_name())
         self.keywords_by_term[term_id] = keywords_indexes
+        print("Keywords indexes: ", keywords_indexes)
 
         # If it doesnt have keywords, the term id is not trainable
-        if len(keywords) == 0:
-            return [], [], {}
+        # if len(keywords) == 0:
+        #     return [], [], {}
 
-        files_input = {}
-        for term_files in group_of_term_files:
-            # Check if the term_files is None. If it is, it means that the term doesn't have files
-            if term_files is None:
-                continue
-            files_paths = term_files.get_files_paths()
-            for file_path in files_paths:
-                # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
-                if file_path not in files_input:
-                    files_input[file_path] = [0] * len(group_of_term_files)
-                files_input[file_path][keywords_indexes[term_files.get_id()]] = 1
+        # files_input = {}
+        # for child in children:
+        #     files_paths = term_files.get_files_paths()
+        #     for file_path in files_paths:
+        #         # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
+        #         if file_path not in files_input:
+        #             files_input[file_path] = [0] * len(child)
+        #         files_input[file_path][keywords_indexes[term_files.get_id()]] = 1
 
-        print("Keywords: ", keywords)
-        texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
-        return texts, keywords_by_text, keywords_indexes
+        # print("Keywords: ", keywords)
+        # texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
+        return "", {}, keywords_indexes
 
     # Print memory usage in function
     # @profile
@@ -221,8 +219,8 @@ class TermTrainer:
                 max_sequence_length = len(words)
         return max_sequence_length
 
-    def train_group(self, term_id, group_of_term_files, training_input_creator):
-        texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files, training_input_creator)
+    def train_group(self, term_id, children, training_input_creator):
+        texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, children, training_input_creator)
         
         if len(keywords_by_text):
             print("Training model for term: ", term_id)
@@ -232,7 +230,7 @@ class TermTrainer:
             self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
             self.models_created += 1
 
-    def train_model_by_thesaurus(self, thesaurus, term_id, training_input_creator):
+    def train_model(self, term_id, training_input_creator):
         # Check if the term is already trained
         term_is_trained = False
         folder_name = training_input_creator.get_folder_name()
@@ -241,18 +239,15 @@ class TermTrainer:
                 self.log.info(f"Model for term {term_id} already exists")
                 term_is_trained = True
 
-        children = thesaurus.get_by_id(term_id).get_children()
+        children = self.thesaurus.get_by_id(term_id).get_children()
         if not children:
             return
         
         if (not term_is_trained):
-            group_of_term_files = []
-            for child_id in children:
-                term_file = self.training_files.get_term_file_with_children_files(child_id)
-                group_of_term_files.append(term_file)
-            # TODO: Remove id (and all it's children) from the thesaurus if it doesn't have files
-            
-            self.train_group(term_id, group_of_term_files, training_input_creator)
+            print("------------")
+            print("TERM ID: ", term_id)
+            print("CHILDREN: ", children)
+            self.train_group(term_id, children, training_input_creator)
             
 
     def save_trained_model(self, term_id, model, folder_name):

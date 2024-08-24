@@ -1,7 +1,6 @@
 import gc
 import json
 import os
-from TermFileMapper import TermFileMapper
 from TermTrainer import TermTrainer
 
 from InputCreators.NormalInputCreator import NormalInputCreator
@@ -14,7 +13,7 @@ class Trainer:
         self.input_creators = [
             # NormalInputCreator(), 
             # TFIDFInputCreator(), 
-            AbstractInputCreator()
+            AbstractInputCreator(thesaurus)
         ]
 
     ''' Save Methods '''
@@ -42,14 +41,10 @@ class Trainer:
 
     # Entrypoint method
     def train_by_term_id(self, term_id):
-        # Create training files
-        term_file_mapper = TermFileMapper()
-        term_file_mapper.create_training_files(self.thesaurus)
-
         for input_creator in self.input_creators:
-            term_trainer = TermTrainer(term_file_mapper.get_training_files())
-            term_trainer.train_model_by_thesaurus(self.thesaurus, term_id, input_creator)
-            self.save_term_trainer(term_trainer)
+            term_trainer = TermTrainer(thesaurus=self.thesaurus)
+            term_trainer.train_model(term_id, input_creator)
+            # self.save_term_trainer(term_trainer)
 
             del term_trainer
             gc.collect()

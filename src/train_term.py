@@ -1,6 +1,5 @@
 import gc
 from UATMapper import UATMapper
-from TermFileMapper import TermFileMapper
 from Trainer import Trainer
 import sys
 

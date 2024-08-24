@@ -1,8 +1,9 @@
 from utils.articles_parser import get_abstract_from_file
 
 class AbstractInputCreator:
-    def __init__(self):
+    def __init__(self, thesaurus):
         self.folder_name = 'abstract'
+        self.thesaurus = thesaurus
 
     def get_folder_name(self):
         return self.folder_name

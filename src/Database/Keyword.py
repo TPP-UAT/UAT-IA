@@ -56,7 +56,6 @@ class Keyword():
 
         for result in results:
             abstract = result[0]
-            print("-------------Abstract: ", abstract)
             abstracts.append(abstract)
         
         return abstracts
