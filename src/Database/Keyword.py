@@ -42,14 +42,14 @@ class Keyword():
 
         return result
     
-    def get_abstracts_by_keyword_id(self, keyword_id):
-        """Get all abstracts associated with a given keyword_id."""
+    def get_abstracts_by_keyword_id(self, keyword_ids):
+        """Get all abstracts associated with a given keyword_ids."""
         from Database.DatabaseModels import FileModel
         abstracts = []
         query = (
             select(FileModel.abstract)
             .join(KeywordModel, FileModel.file_id == KeywordModel.file_id)
-            .where(KeywordModel.keyword_id == keyword_id)
+            .where(KeywordModel.keyword_id.in_(keyword_ids))
         )
 
         results = self.database.query(query)
@@ -59,3 +59,17 @@ class Keyword():
             abstracts.append(abstract)
         
         return abstracts
+    
+    def get_file_ids_by_keyword_ids(self, keyword_ids):
+        """Get all file_ids associated with a given keyword_ids."""
+        file_ids = []
+        query = select(KeywordModel.file_id).where(KeywordModel.keyword_id.in_(keyword_ids))
+
+        results = self.database.query(query)
+
+        for result in results:
+            file_id = result[0]
+            if file_id is not None:
+                file_ids.append(file_id)
+        
+        return file_ids

@@ -30,7 +30,7 @@ def upload_data(pdf_directory, thesaurus, database):
 
     count = 0
     for filename in os.listdir(pdf_directory):
-        if (count % 2 == 0):
+        if (count % 50 == 0):
             log.info(f"Processing file {count} of {file_count}")
 
         if filename.endswith(".pdf"):

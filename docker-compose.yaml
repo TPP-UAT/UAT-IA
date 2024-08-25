@@ -23,6 +23,11 @@ services:
       - "8080:8080"
     depends_on:
       - db
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
 
 volumes:
   postgres_data:

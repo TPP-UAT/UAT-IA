@@ -8,12 +8,13 @@ from InputCreators.AbstractInputCreator import AbstractInputCreator
 from InputCreators.TFIDFInputCreator import TFIDFInputCreator
 
 class Trainer:
-    def __init__(self, thesaurus):
+    def __init__(self, thesaurus, database):
         self.thesaurus = thesaurus
+        self.database = database
         self.input_creators = [
             # NormalInputCreator(), 
             # TFIDFInputCreator(), 
-            AbstractInputCreator(thesaurus)
+            AbstractInputCreator(thesaurus, database)
         ]
 
     ''' Save Methods '''
@@ -42,7 +43,7 @@ class Trainer:
     # Entrypoint method
     def train_by_term_id(self, term_id):
         for input_creator in self.input_creators:
-            term_trainer = TermTrainer(thesaurus=self.thesaurus)
+            term_trainer = TermTrainer(self.thesaurus, self.database)
             term_trainer.train_model(term_id, input_creator)
             # self.save_term_trainer(term_trainer)
 

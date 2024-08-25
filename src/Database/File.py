@@ -11,6 +11,12 @@ class File():
         """Initialize the File instance with a session."""
         self.database = database
 
+    def get_abstract_by_file_id(self, file_id):
+        """Get a file abstract by its file_id."""
+        query = select(FileModel.abstract).where(FileModel.file_id == file_id)
+        result = self.database.query(query).first()
+        return result[0]
+
     def get_all(self): 
         files = []
         """Get all keywords from the database."""
