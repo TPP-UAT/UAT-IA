@@ -47,6 +47,9 @@ if __name__ == '__main__':
                 process = subprocess.Popen([sys.executable, 'src/train_term.py', child.get_id()])
                 process.wait()  # Ensure the process completes before starting the next
                 gc.collect()  # Explicitly collect garbage after each process
+        elif (mode == "predict"):
+            predictor = Predictor(thesaurus, database)
+            predictor.predict()
         
         connection.close()
     except Exception as e:

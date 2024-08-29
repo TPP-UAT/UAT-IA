@@ -12,6 +12,24 @@ services:
     ports:
       - "5432:5432"
 
+  app_gpu:
+    build: .
+    container_name: python_app
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/UAT_IA
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    profiles: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+
   app:
     build: .
     container_name: python_app
@@ -23,11 +41,7 @@ services:
       - "8080:8080"
     depends_on:
       - db
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+    profiles: [non_gpu]
 
 volumes:
   postgres_data:
