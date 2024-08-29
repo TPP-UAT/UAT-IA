@@ -67,11 +67,12 @@ class TermTrainer:
                 # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
                 if file_path not in files_input:
                     files_input[file_path] = [0] * len(group_of_term_files)
+
                 files_input[file_path][keywords_indexes[term_files.get_id()]] = 1
 
-        print("Keywords: ", keywords)
+        # keywords_by_texts is an array where each document represents, on the set of children that is being trained, a 1 if it belongs to the category of the child of that position, or a 0 if it doesn't belong
         texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
-        return texts, keywords_by_text, keywords_indexes
+        return texts, keywords_by_text
 
     # Print memory usage in function
     # @profile
@@ -216,7 +217,7 @@ class TermTrainer:
         return max_sequence_length
 
     def train_group(self, term_id, group_of_term_files, training_input_creator):
-        texts, keywords_by_text, keywords_indexes = self.create_data_input(term_id, group_of_term_files, training_input_creator)
+        texts, keywords_by_text = self.create_data_input(term_id, group_of_term_files, training_input_creator)
         
         if len(keywords_by_text):
             print("Training model for term: ", term_id)
@@ -244,7 +245,6 @@ class TermTrainer:
             for child_id in children:
                 term_file = self.training_files.get_term_file_with_children_files(child_id)
                 group_of_term_files.append(term_file)
-            # TODO: Remove id (and all it's children) from the thesaurus if it doesn't have files
             
             self.train_group(term_id, group_of_term_files, training_input_creator)
             
