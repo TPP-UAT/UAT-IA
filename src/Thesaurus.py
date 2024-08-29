@@ -33,6 +33,15 @@ class Thesaurus:
             if len(term.get_parents()) == 0 and term.get_is_deprecated() == False:
                 fatherless_terms.append(term.get_id())
         return fatherless_terms
+    
+    # Get the children of a term and recursively get the children of the children
+    def get_branch_children(self, term_id):
+        root_term = self.get_by_id(term_id)
+        children = []
+        for child_id in root_term.get_children():
+            children.append(self.get_by_id(child_id))
+            children += self.get_branch_children(child_id)
+        return children
 
     # Setters
     def add_children_of_term(self, thesaurus, term):

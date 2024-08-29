@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: UAT_IA
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  app_gpu:
+    build: .
+    container_name: python_app
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/UAT_IA
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    profiles: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+
+  app:
+    build: .
+    container_name: python_app
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/UAT_IA
+    volumes:
+      - .:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    profiles: [non_gpu]
+
+volumes:
+  postgres_data:

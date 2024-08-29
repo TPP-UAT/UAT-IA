@@ -1,29 +1,34 @@
-import tensorflow as tf
 import gc
 import os
-import numpy as np
-from memory_profiler import profile
-import keras_tuner as kt
 import logging
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+import shutil
+import numpy as np
+import tensorflow as tf
+import keras_tuner as kt
+from memory_profiler import profile
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
-from keras import backend as backend
+from tensorflow.keras import backend as backend
+
 from Model import MyHyperModel
+from Database.Keyword import Keyword
 
 class TermTrainer:
-    def __init__(self, training_files):
-        self.training_files = training_files
+    def __init__(self, thesaurus, database):
+        self.thesaurus = thesaurus
         # { 'term_id': { 'child_term_id': keyword_index } }. This is for retrieving the index of the term_id children id in the training input for the term_id
         self.keywords_by_term = {}
         # Quantity of models created
         self.models_created = 0
         #Flag for making hyperparameter tuning
         self.hyperparameter_tuning = True
+        # db connection
+        self.database = database
+
         # Logging, change log level if needed
         logging.basicConfig(filename='trainer.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         self.log = logging.getLogger('my_logger')
-
 
     # Getters
     def get_trained_models(self):
@@ -41,36 +46,45 @@ class TermTrainer:
         - keywords_by_text: array of arrays of keywords for each text. 1 if it matches the keyword, 0 if not
         - keywords_indexes: The index of the keyword matches the position of the training input { 'term_id': index }
     '''
-    def create_data_input(self, term_id, group_of_term_files, training_input_creator):
-        # The index of the keyword matches the position of the training input { 'term_id': index }
-        # E.g. { '54': 0, '23': 1, '457': 2, '241': 3 }
+    def create_data_input(self, term_id, children, training_input_creator):
+        # keywords_indexes: The index of the keyword matches the position of the training input { 'term_id': index }
+        # E.g. with term_id 104: {'102': 0, '1129': 1, '1393': 2, '661': 3}
         keywords_indexes = {}
         keywords = []
-        for i in range(len(group_of_term_files)):
+
+        for i in range(len(children)):
+            child = children[i]
             # Check if the term_files is None. If it is, it means that the term doesn't have files
-            if group_of_term_files[i] is not None:
-                keywords_indexes[group_of_term_files[i].get_id()] = i
-                keywords.append(group_of_term_files[i].get_name())
+            if children[i] is not None:
+                keywords_indexes[child] = i
+
+                keyword = self.thesaurus.get_by_id(child).get_name()
+                keywords.append(keyword)
+
         self.keywords_by_term[term_id] = keywords_indexes
 
         # If it doesnt have keywords, the term id is not trainable
         if len(keywords) == 0:
             return [], [], {}
 
+        keyword_db = Keyword(self.database)
+        # files_input: { 'file_path': [0, 0, 1, 0] }. The array of 0s and 1s represents the keywords for the file
         files_input = {}
-        for term_files in group_of_term_files:
-            # Check if the term_files is None. If it is, it means that the term doesn't have files
-            if term_files is None:
-                continue
-            files_paths = term_files.get_files_paths()
+        for child in children:
+            # Get all children recursively from the child term (To associate all child files to the term child)
+            term_children = self.thesaurus.get_branch_children(child)
+            term_children_ids = [term.get_id() for term in term_children]
+            term_children_ids.insert(0, child)
+
+            files_paths = keyword_db.get_file_ids_by_keyword_ids(term_children_ids)
             for file_path in files_paths:
                 # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
                 if file_path not in files_input:
-                    files_input[file_path] = [0] * len(group_of_term_files)
+                    files_input[file_path] = [0] * len(children)
+                files_input[file_path][keywords_indexes[child]] = 1
 
-                files_input[file_path][keywords_indexes[term_files.get_id()]] = 1
-
-        # keywords_by_texts is an array where each document represents, on the set of children that is being trained, a 1 if it belongs to the category of the child of that position, or a 0 if it doesn't belong
+        # keywords_by_texts is an array where each document represents, on the set of children that is being trained, 
+        # a 1 if it belongs to the category of the child of that position, or a 0 if it doesn't belong
         texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
         return texts, keywords_by_text
 
@@ -78,8 +92,10 @@ class TermTrainer:
     # @profile
     def generate_model_for_group_of_terms(self, texts, keywords_by_text, term_id, training_input_creator):
         self.log.info(f"Training with {len(texts)} files")
+
         # Resets all state generated by Keras for memory consumption
         tf.keras.backend.clear_session()
+        tf.get_logger().setLevel('ERROR')
 
         number_of_categories = len(keywords_by_text[0])
 
@@ -93,7 +109,7 @@ class TermTrainer:
         sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
 
         # Verify if you have enough data to split
-        if len(sequences_padded) <= 2 or len(keywords_by_text) <= 2:
+        if len(sequences_padded) <= 2 or len(keywords_by_text) <= 2:            
             print("Warning: Not enough data to perform a meaningful train-test split.")
             self.log.warning(f"Not enough data to perform a meaningful train-test split for term ID: {term_id}")
         else:
@@ -113,7 +129,7 @@ class TermTrainer:
             else:
                 hypermodel = None
                 model = self.create_model(number_of_categories, max_sequence_length, vocab_size, embedding_dim, train_data, test_data, train_labels, test_labels)
-
+            
             # Save the trained model
             self.save_trained_model(term_id, model, training_input_creator.get_folder_name())
 
@@ -156,7 +172,7 @@ class TermTrainer:
         my_hyper_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
         tuner = self.get_tuner_strategy('bayesian', my_hyper_model, term_id+'-'+training_input_creator.get_folder_name())
             
-        tuner.search(train_data, train_labels, epochs=10, validation_split=0.2)
+        tuner.search(train_data, train_labels, epochs=20, validation_split=0.2)
 
         # Get the optimal hyperparameters
         best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
@@ -183,7 +199,11 @@ class TermTrainer:
         eval_result = hypermodel.evaluate(test_data, test_labels)
         self.log.info(f"[test loss, test accuracy]: [{eval_result[0]}, {eval_result[1]}]")
 
-         # Delete the tuner to free memory
+        # Delete tuner folder
+        subdir = "tuner" + '/' + term_id+'-'+training_input_creator.get_folder_name()
+        shutil.rmtree(subdir)
+        
+        # Delete the tuner to free memory
         del tuner
         gc.collect()
 
@@ -193,7 +213,7 @@ class TermTrainer:
         match type:
             case 'hyperband':
                 return kt.Hyperband(hyper_model, objective="val_accuracy", max_epochs = 10, 
-                     factor = 2, directory='tuner', project_name=project_name)
+                     factor = 3, directory='tuner', project_name=project_name)
             case 'bayesian':
                 return kt.BayesianOptimization(
                     hyper_model,
@@ -216,18 +236,17 @@ class TermTrainer:
                 max_sequence_length = len(words)
         return max_sequence_length
 
-    def train_group(self, term_id, group_of_term_files, training_input_creator):
-        texts, keywords_by_text = self.create_data_input(term_id, group_of_term_files, training_input_creator)
+    def train_group(self, term_id, children, training_input_creator):
+        texts, keywords_by_text = self.create_data_input(term_id, children, training_input_creator)
         
         if len(keywords_by_text):
-            print("Training model for term: ", term_id)
-            self.log.info("------------------------------------------")
-            self.log.info(f"Training model for term ID: {term_id}")
-        
             self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
             self.models_created += 1
 
-    def train_model_by_thesaurus(self, thesaurus, term_id, training_input_creator):
+    # Entrypoint method
+    def train_model(self, term_id, training_input_creator):
+        self.log.info(f"---------------------------------")
+        self.log.info(f"Started training for term ID: {term_id}")
         # Check if the term is already trained
         term_is_trained = False
         folder_name = training_input_creator.get_folder_name()
@@ -236,17 +255,12 @@ class TermTrainer:
                 self.log.info(f"Model for term {term_id} already exists")
                 term_is_trained = True
 
-        children = thesaurus.get_by_id(term_id).get_children()
+        children = self.thesaurus.get_by_id(term_id).get_children()
         if not children:
             return
         
         if (not term_is_trained):
-            group_of_term_files = []
-            for child_id in children:
-                term_file = self.training_files.get_term_file_with_children_files(child_id)
-                group_of_term_files.append(term_file)
-            
-            self.train_group(term_id, group_of_term_files, training_input_creator)
+            self.train_group(term_id, children, training_input_creator)
             
 
     def save_trained_model(self, term_id, model, folder_name):

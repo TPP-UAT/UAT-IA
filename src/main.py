@@ -1,65 +1,57 @@
 import gc
+import subprocess
 import sys
-from Predictor import Predictor
-from Trainer import Trainer
+import os
+import tensorflow as tf
+from dotenv import load_dotenv
 from UATMapper import UATMapper
-from utils.pdfs_terms_parser import generate_json 
-
-from utils.articles_parser import get_full_text_from_file, get_abstract_from_file, get_tf_idf_words_from_file
+from Predictor import Predictor
+from Database.Database import Database
+from Database.Keyword import Keyword
+from utils.pdfs_terms_parser import upload_data 
 
 if __name__ == '__main__':
     gc.set_debug(gc.DEBUG_SAVEALL)
-
-    # This term (modified a bit on the json) has 11 children that covers the whole thesaurus
-    mapper = UATMapper("./data/UAT-filtered.json")
-    thesaurus = mapper.map_to_thesaurus()
-
-    print(
-"""-----------------------------------------------
-Training options:
-        1 - Change document/articles files
-        2 - Train with documents and save
-        3 - Predict with existent model
-        4 - Find shortest path between two terms
-Insert option number: """)
-    training_option = input()
-
-    # Change document/articles files
-    if (training_option == "1"):
-        # Generate json file with terms associated to pdfs
-        generate_json("./data/PDFs", thesaurus)
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     
-    # Train the models
-    elif (training_option == "2"):
-        # Father terms: 104, 343, 486, 563, 739, 804, 847, 1145, 1476, 1529, 1583
-        # Root term: 1
-        initial_term_ids = ['1']
+    load_dotenv() # Load environment variables
+    db_url = os.getenv('DB_URL')
+    mode = os.getenv('MODE')
 
-        trainer = Trainer(initial_term_ids, thesaurus)
-        trainer.train()
+    # Check if GPU is used
+    # print("TensorFlow version:", tf.__version__)
+    # print("Is built with CUDA:", tf.test.is_built_with_cuda())
+    # print("GPU devices:", tf.config.experimental.list_physical_devices('GPU'))
 
-    # Predict with existent model
-    elif (training_option == "3"):
-        file_name = input("Insert the file name from the file to predict: ")
-        initial_term_id = '1'
+    try:
+        # Initialize database
+        database = Database(db_url)
+        engine = database.get_engine()
+        connection = engine.connect()
+        database.init_db()
+
+        pdf_directory = "./data/PDFs"
+        mapper = UATMapper("./data/UAT-filtered.json")
+        thesaurus = mapper.map_to_thesaurus()
+
+        if (mode == "generate"):
+            upload_data(pdf_directory, thesaurus, database)
+        elif (mode == "train"):
+            # Create a root term
+            root_term = thesaurus.get_by_id("1")
+            # Iterate over all the children of the root term (We're missing the training for the root term)
+            children = thesaurus.get_branch_children("1")
+            children.insert(0, root_term)
+            for child in children:
+                print("Training term id: ", child.get_id())
+                process = subprocess.Popen([sys.executable, 'src/train_term.py', child.get_id()])
+                process.wait()  # Ensure the process completes before starting the next
+                gc.collect()  # Explicitly collect garbage after each process
+        elif (mode == "predict"):
+            predictor = Predictor(thesaurus, database)
+            predictor.predict()
         
-        predictor = Predictor(initial_term_id, thesaurus, file_name)
-        predictor.predict()
+        connection.close()
+    except Exception as e:
+        print(f"Database connection failed: {e}")
 
-    # Find shortest path between two terms
-    elif (training_option == "4"):
-        while True:
-            start_term_id = input("Insert the ID from the first term (q for quit): ")
-            end_term_id = input("Insert the ID from the second term (q for quit): ")
-
-            if start_term_id == 'q' or end_term_id == 'q':
-                sys.exit()
-
-            shortest_path = thesaurus.find_shortest_path(start_term_id, end_term_id)
-
-            if shortest_path:
-                print("The shortest path is:", shortest_path)
-                print("------------------")
-            else:
-                print("There's no path between the terms.")
-                print("------------------")

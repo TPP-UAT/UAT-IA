@@ -6,3 +6,9 @@ data_scrapper.log
 *.json
 *checkpoint*
 *.log
+.venv
+uat_ia.egg-info
+
+!data/UAT-filtered.json
+!data/UAT-original.json
+!data/UAT-pretty.json

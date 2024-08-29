@@ -2,7 +2,6 @@ import os
 import glob
 import json
 import tensorflow as tf
-from dotenv import load_dotenv
 from TrainedModels import TrainedModels
 from TermPrediction import TermPrediction
 from utils.articles_parser import get_abstract_from_file
@@ -25,7 +24,6 @@ class Predictor:
         ]
         self.predictions = {}
         self.predictions_by_term = {}
-        load_dotenv() 
 
     def print_predictions(self):
         print('----------------------------- Predictions ----------------------------')
@@ -97,9 +95,6 @@ class Predictor:
     def predict(self):
         # The index of the keyword matches the position of the training input { 'term_id': index }
         keywords_by_term = self.load_keywords_by_term()
-
-        file_to_predict = os.getenv('FILE_TO_PREDICT')
-        self.file_name_to_predict = file_to_predict
         abstract = get_abstract_from_file('prediction_files/' + self.file_name_to_predict + '.pdf')
 
         # Iterate through the input creators
