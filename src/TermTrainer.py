@@ -83,6 +83,8 @@ class TermTrainer:
                     files_input[file_path] = [0] * len(children)
                 files_input[file_path][keywords_indexes[child]] = 1
 
+        # keywords_by_texts is an array where each document represents, on the set of children that is being trained, 
+        # a 1 if it belongs to the category of the child of that position, or a 0 if it doesn't belong
         texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
         return texts, keywords_by_text
 
