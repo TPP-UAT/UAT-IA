@@ -17,6 +17,7 @@ if __name__ == '__main__':
     load_dotenv() # Load environment variables
     db_url = os.getenv('DB_URL')
     mode = os.getenv('MODE')
+    file_to_predict = os.getenv('FILE_TO_PREDICT')
 
     # Check if GPU is used
     # print("TensorFlow version:", tf.__version__)
@@ -48,10 +49,12 @@ if __name__ == '__main__':
                 process.wait()  # Ensure the process completes before starting the next
                 gc.collect()  # Explicitly collect garbage after each process
         elif (mode == "predict"):
-            predictor = Predictor(thesaurus, database)
+            root_term = thesaurus.get_by_id("1")
+            predictor = Predictor(root_term.get_id(), file_to_predict)
+
             predictor.predict()
         
         connection.close()
     except Exception as e:
         print(f"Database connection failed: {e}")
-
+        connection.close()

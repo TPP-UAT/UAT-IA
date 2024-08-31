@@ -1,9 +1,14 @@
 import fitz
+from Database.File import File
 from utils.articles_parser import get_full_text_from_file
 
 class NormalInputCreator:
-    def __init__(self):
+    def __init__(self, database = None):
         self.folder_name = 'normal'
+
+        # Database connection
+        self.database = database
+        self.file_db = File(database)
 
     def get_folder_name(self):
         return self.folder_name

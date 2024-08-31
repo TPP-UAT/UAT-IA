@@ -1,11 +1,16 @@
+from Database.File import File
 from utils.articles_parser import get_tf_idf_words_from_file
 
 class TFIDFInputCreator:
 
-    def __init__(self):
+    def __init__(self, database = None):
         self.COMMON_WORDS = ['et', 'al', 'in', 'be', 'at', 'has', 'that', 'can', 'was', 'its', 'both', 'may', 'we', 'not', 'will', 'or', 'it', 'they', 'than', 'these', 'however', 'co', 'from', 'an', 'ah', 'for', "by", "would", "also", "to", 'and', 'the', 'this', "of", "the", "on", "as", "with", "our", "are", "is"]
         self.keywords_by_word = []
         self.folder_name = 'tf-idf'
+
+        # Database connection
+        self.database = database
+        self.file_db = File(database)
 
     def get_folder_name(self):
         return self.folder_name
