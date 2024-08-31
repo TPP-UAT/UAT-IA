@@ -26,9 +26,7 @@ class SummarizeInputCreator:
 
         for file_path, file_input in files_input.items():
             try:
-                print("---------------------------------")
                 file = json.load(open(file_path))
-                print("FILE: ", file)
                 summarized_text = self.summarize_text(file['text'])
                 print("SUMMARIZED TEXT: ", summarized_text)
                 texts.append(summarized_text)
