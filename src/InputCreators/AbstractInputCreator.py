@@ -1,10 +1,9 @@
 from Database.File import File
 
 class AbstractInputCreator:
-    def __init__(self, thesaurus, database):
+    def __init__(self, database = None):
         self.folder_name = 'abstract'
-        self.thesaurus = thesaurus
-
+        
         # Database connection
         self.database = database
         self.file_db = File(database)

@@ -7,7 +7,7 @@ from Database.DatabaseModels import FileModel
 Base = declarative_base()
 
 class File():
-    def __init__(self, database):
+    def __init__(self, database=None):
         """Initialize the File instance with a session."""
         self.database = database
 

@@ -13,13 +13,12 @@ from InputCreators.TFIDFInputCreator import TFIDFInputCreator
 from InputCreators.AbstractInputCreator import AbstractInputCreator
 
 class Predictor:
-    def __init__(self, initial_term_id, thesaurus, file_name_to_predict):
+    def __init__(self, initial_term_id, file_name_to_predict):
         self.initial_term_id = initial_term_id
-        self.thesaurus = thesaurus
         self.file_name_to_predict = file_name_to_predict
         self.input_creators = [
-            NormalInputCreator(), 
-            TFIDFInputCreator(), 
+            # NormalInputCreator(), 
+            # TFIDFInputCreator(), 
             AbstractInputCreator()
         ]
         self.predictions = {}
@@ -70,7 +69,6 @@ class Predictor:
         return predictions
 
     def generate_predictions(self, predictions):
-        print("predictions", predictions)
         # Combine predictions from different input creators if the term is already in the predictions
         for prediction in predictions:
             for predicted_term in prediction:
