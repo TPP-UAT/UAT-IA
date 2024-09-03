@@ -38,7 +38,7 @@ def get_text_from_page(page):
     
     # First filter using the full span element (more properties)
     # comentar esto para ver diferencias
-    # page_spans = clean_spans_from_page(page_spans)
+    page_spans = clean_spans_from_page(page_spans)
 
     # The text is reconstructed from the spans without any line breaks
     text = ""
@@ -54,7 +54,7 @@ def get_full_text_from_file(file_path):
     bold_text = []
     for page_number in range(1):
         # Numero de pagina - 1 que el pdf
-        page = pdf_document[18]
+        page = pdf_document[4]
         text, bold_text_from_page = get_text_from_page(page)
         # text = page.get_text()
         # ctrl+shift+p: toggle word wrap para evitar scroll
@@ -66,7 +66,7 @@ def get_full_text_from_file(file_path):
     pdf_document.close()
     # Second filter using the only the text
     # comentar esto para ver diferencias
-    full_text = clean_plain_text(full_text, bold_text)
+    # full_text = clean_plain_text(full_text, bold_text)
     return full_text
 
 # Retrieve the abstract from an article
@@ -174,8 +174,10 @@ def clean_references_from_text(text):
     Params: The spans from each page
 '''
 def clean_spans_from_page(spans):
+    # print("------spans: ", spans)
     spans = clean_tables_from_text(spans)
     spans = clean_urls_from_text(spans)
+    # spans = clean_equations_from_text(spans)
     
     return spans
 
@@ -229,6 +231,36 @@ def clean_urls_from_text(spans):
         if start_index is not None:
             for k in range(start_index, len(spans)):
                 if spans[k]['color'] != text_color:
+                    end_index = k
+                    break
+
+        # If both elements were found, remove the elements between them
+        if start_index is not None and end_index is not None:
+            del spans[start_index:end_index]
+            i = start_index
+        else:
+            i += 1
+
+    return spans
+
+def clean_equations_from_text(spans):
+    # We have to iterate through the spans to find the start and end of the equations
+    i = 0
+    while i < len(spans):
+        start_index = None
+        end_index = None
+
+        # Find an element that matches an equation (It has a different font)
+        for j in range(i, len(spans)):
+            if spans[j]["font"] in ["TimesLTStd-Roman", "STIXTwoMath", "TimesLTStd-Italic", "EuclidSymbol"]:
+                print("----EQUATION: ", spans[j]["text"])
+                start_index = j
+                break
+
+        # Find the ending of the equation 
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                if spans[k]["font"] not in ["TimesLTStd-Roman", "STIXTwoMath", "TimesLTStd-Italic", "EuclidSymbol"]:
                     end_index = k
                     break
 
