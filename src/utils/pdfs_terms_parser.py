@@ -54,10 +54,10 @@ def upload_data(pdf_directory, thesaurus, database):
             print("FILE ID", filename)
             # Get the necessary information from the PDF file
             full_text = get_full_text_from_file(file_path)
-            keywords = get_keywords_from_file(file_path)
-            abstract = get_abstract_from_file(file_path)
+            # keywords = get_keywords_from_file(file_path)
+            # abstract = get_abstract_from_file(file_path)
 
-            result = file_db.add(file_id=file_id, abstract=abstract, full_text=full_text)
+            result = file_db.add(file_id=file_id, abstract="", full_text=full_text)
 
             #if (result != False):
                 #for keyword in keywords:
