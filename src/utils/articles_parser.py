@@ -2,49 +2,50 @@ import fitz
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+
+def get_bold_text_from_page(page):
+    bold_text = []
+    blocks = page.get_text("dict")["blocks"]
+
+    # page_text = ""
+    for block in blocks:
+        if "lines" in block:  
+            for line in block["lines"]:
+                for span in line["spans"]:
+                    text = span["text"]
+                    # page_text += text + " "
+                    font_name = span["font"]
+
+                    if "Bold" in font_name or ".B" in font_name or "Black" in font_name:
+                        bold_text.append(text)
+    return bold_text
+
 # Retrieve the full text from an article
 def get_full_text_from_file(file_path):
     pdf_document = fitz.open('data/' + file_path)
     full_text = ""
+    bold_texts = []
     for page_number in range(len(pdf_document)):
         page = pdf_document[page_number]
         text = page.get_text()
         full_text += text + "\n\n"
-    
+
+        bold_texts = bold_texts + get_bold_text_from_page(page)
+
     pdf_document.close()
-    #full_text = clean_text(full_text)
+    full_text = clean_text(full_text, bold_texts)
     return full_text
 
 # Cleans the text by applying a series of text processing functions
-def clean_text(text):
-    #text = remove_tables_from_text(text)
-
-    #text = clean_header_from_text(text)
+def clean_text(text, bold_texts):
+    text = clean_urls_from_text(text)
+    text = clean_header_from_text(text)
     text = clean_footer_from_text(text)
-   
-    #text = clean_authors_from_text(text)
-    # text = clean_references_from_text(text)
-    # text = clean_urls_from_text(text)
-    return text
+    text = clean_references_from_text(text)
+    text = clean_orcidIds_from_text(text)
+    text = clean_authors_from_text(text, bold_texts)
 
-def remove_tables_from_text(text):
-    # Detectar líneas con varios números o valores separados por espacios (posible tabla)
-    table_pattern = r"(?:\d+\.\d+|\d+|[a-zA-Z]+)\s+(?:\d+\.\d+|\d+|[a-zA-Z]+)(?:\s+(?:\d+\.\d+|\d+|[a-zA-Z]+))*"
-    
-    # Detectar grupos de líneas que coincidan con el patrón de tabla
-    table_block_pattern = re.compile(rf"(?:{table_pattern}\n)+", re.MULTILINE)
-    
-    # Encontrar todas las coincidencias
-    tables_found = re.findall(table_block_pattern, text)
-    
-    # Imprimir las tablas detectadas
-    for i, table in enumerate(tables_found, 1):
-        print(f"\nTabla {i} detectada:\n{table}\n", flush=True)
-    
-    # Reemplazar los bloques que parecen tablas con una cadena vacía
-    cleaned_text = re.sub(table_block_pattern, "", text)
-    
-    return cleaned_text
+    return text
 
 def clean_header_from_text(text):
  # Pattern to capture the header for different journal names
@@ -53,23 +54,64 @@ def clean_header_from_text(text):
 
 def clean_footer_from_text(text):
     # Removes footer-like patterns containing publication information
-    footer_pattern = r"\bThe Astrophysical Journal.*?\b(?:\n|\Z)"
+    footer_pattern = r"\bThe (Astrophysical Journal|Astronomical Journal|Astrophysical Journal Letters|Astrophysical Journal Supplement Series).*?(?:\n|\Z)"
     return re.sub(footer_pattern, "", text)
 
-def clean_authors_from_text(text):
-    # Removes author names and affiliations
-    authors_pattern = r"(?:^|\n)(?:[A-Z]\.\s?[A-Za-z]+,\s?)+\n(?:[A-Za-z,]+\s?)+"
-    return re.sub(authors_pattern, "", text)
+def clean_authors_from_text(text, bold_texts):
+    # Find the index of "Abstract" in bold_texts
+    try:
+        abstract_index = bold_texts.index('Abstract')
+    except ValueError:
+        # If "Abstract" is not in bold_texts, return the original text
+        return text
+
+    # Find the bold text immediately before "Abstract"
+    if abstract_index > 0:
+        previous_bold_text = bold_texts[abstract_index - 1]
+    else:
+        # If "Abstract" is the first item, there is no previous bold text
+        return text
+
+    # Find the start index of the previous bold text in the text
+    start_index = text.find(previous_bold_text)
+    if start_index == -1:
+        # If the previous bold text is not found in the text, return the original text
+        return text
+
+    # Find the start index of "Abstract"
+    abstract_start_index = text.find('Abstract', start_index)
+    if abstract_start_index == -1:
+        # If "Abstract" is not found after the previous bold text, return the original text
+        return text
+
+    # Remove text between the end of the previous bold text and the start of "Abstract"
+    end_of_previous_bold = start_index + len(previous_bold_text)
+    
+    result_text = text[:end_of_previous_bold] + "\n" + text[abstract_start_index:]
+
+    return result_text
+
 
 def clean_references_from_text(text):
-    # Removes references to sections, papers, or figures
-    references_pattern = r"\(.*?Sections?.*?\)|\[.*?\]"
-    return re.sub(references_pattern, "", text)
+    #Removes all content from the last occurrence of 'References' to the end.
+    last_occurrence = text.rfind("References")
+    if last_occurrence != -1:
+        return text[:last_occurrence]
+    else:
+        return text
 
 def clean_urls_from_text(text):
     # Removes URLs and DOIs
     urls_pattern = r"https?://\S+|doi:\S+"
     return re.sub(urls_pattern, "", text)
+
+def clean_orcidIds_from_text(text):
+    #Removes all content from the last occurrence of 'ORCID iDs' to the end."
+    last_occurrence = text.rfind("ORCID iDs")
+    if last_occurrence != -1:
+        return text[:last_occurrence]
+    else:
+        return text
 
 # Retrieve the abstract from an article
 def get_abstract_from_file(file_path):
