@@ -1,7 +1,19 @@
 import fitz
 import re
 import os
+import json
 from sklearn.feature_extraction.text import TfidfVectorizer
+
+equation_fonts = ["TimesLTStd-Roman",
+                   "STIXTwoMath", 
+                   "TimesLTStd-Italic", 
+                   "EuclidSymbol", 
+                   "AdvTTec1d2308.I+03", 
+                   "STIXGeneral-Regular", 
+                   "EuclidSymbol-Italic",
+                   "AdvTTab7e17fd+22",
+                   "EuclidMathTwo"
+                   ]
 
 # TODO: Delete this function
 def save_string_to_file(string, filename):
@@ -36,6 +48,10 @@ def get_text_from_page(page):
                     if "Bold" in font_name or ".B" in font_name or "Black" in font_name:
                         bold_text.append(text)
     
+    # Guarda los spans en un archivo
+    objects_string = json.dumps(page_spans, indent=2)
+    save_string_to_file(objects_string, 'spans.txt')
+
     # First filter using the full span element (more properties)
     # comentar esto para ver diferencias
     page_spans = clean_spans_from_page(page_spans)
@@ -54,9 +70,10 @@ def get_full_text_from_file(file_path):
     bold_text = []
     for page_number in range(1):
         # Numero de pagina - 1 que el pdf
-        page = pdf_document[4]
+        page = pdf_document[1]
         text, bold_text_from_page = get_text_from_page(page)
         # text = page.get_text()
+
         # ctrl+shift+p: toggle word wrap para evitar scroll
         save_string_to_file(text, 'text.txt')
 
@@ -64,6 +81,7 @@ def get_full_text_from_file(file_path):
         full_text += text + "\n\n"
 
     pdf_document.close()
+
     # Second filter using the only the text
     # comentar esto para ver diferencias
     # full_text = clean_plain_text(full_text, bold_text)
@@ -174,10 +192,10 @@ def clean_references_from_text(text):
     Params: The spans from each page
 '''
 def clean_spans_from_page(spans):
-    # print("------spans: ", spans)
     spans = clean_tables_from_text(spans)
     spans = clean_urls_from_text(spans)
-    # spans = clean_equations_from_text(spans)
+    spans = clean_equations_from_text(spans)
+    spans = clean_years_from_text(spans)
     
     return spans
 
@@ -251,18 +269,44 @@ def clean_equations_from_text(spans):
         end_index = None
 
         # Find an element that matches an equation (It has a different font)
+        # If it's only one line, it's not an equation
         for j in range(i, len(spans)):
-            if spans[j]["font"] in ["TimesLTStd-Roman", "STIXTwoMath", "TimesLTStd-Italic", "EuclidSymbol"]:
-                print("----EQUATION: ", spans[j]["text"])
+            if spans[j]["font"] in equation_fonts:
                 start_index = j
                 break
 
         # Find the ending of the equation 
         if start_index is not None:
             for k in range(start_index, len(spans)):
-                if spans[k]["font"] not in ["TimesLTStd-Roman", "STIXTwoMath", "TimesLTStd-Italic", "EuclidSymbol"]:
+                if spans[k]["font"] not in equation_fonts:
                     end_index = k
+                    if (end_index - start_index) < 2:
+                        start_index = None
+                        end_index = None
                     break
+
+        # If both elements were found, remove the elements between them
+        if start_index is not None and end_index is not None:
+            del spans[start_index:end_index]
+            i = start_index
+        else:
+            i += 1
+
+    return spans
+
+def clean_years_from_text(spans):
+    # We have to iterate through the spans to find the start and end of the years
+    i = 0
+    while i < len(spans):
+        start_index = None
+        end_index = None
+
+        # Find an element that matches a "( "
+        for j in range(i, len(spans)):
+            if (re.match(r'\s?\(', spans[j]['text']) and re.match(r'\d{4}', spans[j+1]['text']) and re.match(r'\s?\)', spans[j+2]['text'])):
+                start_index = j
+                end_index = j + 3
+                break
 
         # If both elements were found, remove the elements between them
         if start_index is not None and end_index is not None:
