@@ -68,23 +68,24 @@ def get_full_text_from_file(file_path):
     pdf_document = fitz.open('data/' + file_path)
     full_text = ""
     bold_text = []
-    for page_number in range(1):
+    for page_number in range(len(pdf_document)):
         # Numero de pagina - 1 que el pdf
-        page = pdf_document[1]
+        page = pdf_document[page_number]
         text, bold_text_from_page = get_text_from_page(page)
         # text = page.get_text()
 
         # ctrl+shift+p: toggle word wrap para evitar scroll
-        save_string_to_file(text, 'text.txt')
 
-        # bold_text.append(bold_text_from_page)
+        bold_text = bold_text + bold_text_from_page
         full_text += text + "\n\n"
 
     pdf_document.close()
 
     # Second filter using the only the text
     # comentar esto para ver diferencias
-    # full_text = clean_plain_text(full_text, bold_text)
+    full_text = clean_plain_text(full_text, bold_text)
+    save_string_to_file(full_text, 'text1.txt')
+
     return full_text
 
 # Retrieve the abstract from an article
@@ -160,26 +161,16 @@ def get_tf_idf_words_from_file(file_path, keywords_by_word):
     Params: The plain text of the full article and an array of bold texts
 '''
 def clean_plain_text(text, bold_text):
-    #text = clean_header_from_text(text)
-    # text = clean_footer_from_text(text)
-    # text = clean_orcidIds_from_text(text)
-   
-    #text = clean_authors_from_text(text)
-    # text = clean_references_from_text(text)
-    # text = clean_urls_from_text(text)
+    text = clean_header_from_text(text)
+    text = clean_orcidIds_from_text(text)
+    text = clean_authors_from_text(text, bold_text)
+    text = clean_references_from_text(text)
     return text
 
 
 def clean_header_from_text(text):
- # Pattern to capture the header for different journal names
-    header_pattern = r"(The (Astrophysical Journal|Astronomical Journal|Astrophysical Journal Letters|Astrophysical Journal Supplement Series).*)(?:\n\n|\Z)"
-    return re.sub(header_pattern, "", text, flags=re.DOTALL)
-
-def clean_footer_from_text(text):
-    # Removes footer-like patterns containing publication information
-    footer_pattern = r"\bThe (Astrophysical Journal|Astronomical Journal|Astrophysical Journal Letters|Astrophysical Journal Supplement Series).*?(?:\n|\Z)"
-    return re.sub(footer_pattern, "", text)
-
+    header_pattern = r"\.[^.]*The (Astrophysical Journal Supplement Series|Astronomical Journal|Astrophysical Journal Letters|Astrophysical Journal)[^.]*\."
+    return re.sub(header_pattern, ".", text)
 
 def clean_authors_from_text(text, bold_texts):
     # Find the index of "Abstract" in bold_texts
@@ -210,7 +201,7 @@ def clean_authors_from_text(text, bold_texts):
 
     # Remove text between the end of the previous bold text and the start of "Abstract"
     end_of_previous_bold = start_index + len(previous_bold_text)
-    
+
     result_text = text[:end_of_previous_bold] + "\n" + text[abstract_start_index:]
 
     return result_text
