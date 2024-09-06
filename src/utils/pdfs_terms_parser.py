@@ -31,9 +31,13 @@ def upload_data(pdf_directory, thesaurus, database):
     root_term_grandchildren = []
 
     for children_id in root_term_children:
-        children_of_children = thesaurus.get_by_id(children_id).get_children()
-        for grandchild_id in children_of_children:
-            root_term_grandchildren.append(grandchild_id)
+        try:
+            children_of_children = thesaurus.get_by_id(children_id).get_children()
+            for grandchild_id in children_of_children:
+                root_term_grandchildren.append(grandchild_id)
+        except Exception as e:
+            log.error(f"Error processing children of {children_id}: {e}")
+            continue
 
     file_count = count_files(pdf_directory)
     log.info(f"Saving in db with {file_count} files.")
@@ -44,35 +48,44 @@ def upload_data(pdf_directory, thesaurus, database):
             log.info(f"Processing file {count} of {file_count}")
 
         if filename.endswith(".pdf"):
-            file_id = filename.replace(".pdf","")
+            try:
+                file_id = filename.replace(".pdf", "")
+                pdf_file_path = os.path.join(pdf_directory, filename)
+                file_path = os.path.join("PDFs", filename)
 
-            pdf_file_path = os.path.join(pdf_directory, filename)
-            file_path = os.path.join("PDFs", filename)
+                # Open the PDF file
+                pdf_document = fitz.open(pdf_file_path)
+                print("Processing file ID:", filename)
 
-            # Open the PDF file
-            pdf_document = fitz.open(pdf_file_path)
-            print("FILE ID", filename)
-            # Get the necessary information from the PDF file
-            full_text = get_full_text_from_file(file_path)
-            keywords = get_keywords_from_file(file_path)
-            abstract = get_abstract_from_file(file_path)
+                log.info(f"Processing file ID: {filename}")
 
-            result = file_db.add(file_id=file_id, abstract=abstract, full_text=full_text)
+                # Get the necessary information from the PDF file
+                full_text = ""  # Aquí no se utiliza get_full_text_from_file
+                keywords = get_keywords_from_file(file_path)
+                abstract = get_abstract_from_file(file_path)
 
-            #if (result != False):
-                #for keyword in keywords:
-                    #if keyword in root_term_children or keyword in root_term_grandchildren:
-                        #keyword_db.add(file_id=file_id, keyword_id=keyword, order=1)
-                    #else:
-                        #keyword_db.add(file_id=file_id, keyword_id=keyword, order=2)
+                result = file_db.add(file_id=file_id, abstract=abstract, full_text=full_text)
+                if result != False:
+                    for keyword in keywords:
+                        if keyword in root_term_children or keyword in root_term_grandchildren:
+                            keyword_db.add(file_id=file_id, keyword_id=keyword, order=1)
+                        else:
+                            keyword_db.add(file_id=file_id, keyword_id=keyword, order=2)
 
-            pdf_document.close()
-            count += 1
+                pdf_document.close()
+                count += 1
+
+            except Exception as e:
+                # Guardar el nombre del archivo que generó el error junto con el error en el log
+                log.error(f"Error processing file {filename}: {e}")
+                continue
 
     # Iterates over all the keywords_ids of the thesaurus and if does not exist, saves the keywords with empty documents
-    all_keywords_id = list(thesaurus.get_terms().keys())
-    for keyword_id in all_keywords_id:
-        count = keyword_db.get_count_by_keyword_id(keyword_id)
-
-        #if count == 0:
-            #keyword_db.add(keyword_id=keyword_id, file_id=None, order=2)
+    try:
+        all_keywords_id = list(thesaurus.get_terms().keys())
+        for keyword_id in all_keywords_id:
+            count = keyword_db.get_count_by_keyword_id(keyword_id)
+            if count == 0:
+                keyword_db.add(keyword_id=keyword_id, file_id=None, order=2)
+    except Exception as e:
+        log.error(f"Error processing keywords: {e}")
