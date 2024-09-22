@@ -1,7 +1,6 @@
 import gc
 import sys
 from UATMapper import UATMapper
-from utils.pdfs_terms_parser import generate_json 
 
 if __name__ == '__main__':
     gc.set_debug(gc.DEBUG_SAVEALL)

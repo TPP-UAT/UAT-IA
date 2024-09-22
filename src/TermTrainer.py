@@ -2,6 +2,7 @@ import gc
 import os
 import logging
 import shutil
+import json
 import numpy as np
 import tensorflow as tf
 import keras_tuner as kt
@@ -13,6 +14,8 @@ from tensorflow.keras import backend as backend
 
 from Model import MyHyperModel
 from Database.Keyword import Keyword
+
+tf.get_logger().setLevel(logging.ERROR)
 
 class TermTrainer:
     def __init__(self, thesaurus, database):
@@ -31,9 +34,6 @@ class TermTrainer:
         self.log = logging.getLogger('my_logger')
 
     # Getters
-    def get_trained_models(self):
-        return self.trained_models
-
     def get_keywords_by_term(self):
         return self.keywords_by_term
     
@@ -61,6 +61,7 @@ class TermTrainer:
                 keyword = self.thesaurus.get_by_id(child).get_name()
                 keywords.append(keyword)
 
+        self.log.info(f"Keywords indexes: {json.dumps(keywords_indexes)}")
         self.keywords_by_term[term_id] = keywords_indexes
 
         # If it doesnt have keywords, the term id is not trainable
@@ -238,9 +239,9 @@ class TermTrainer:
 
     def train_group(self, term_id, children, training_input_creator):
         texts, keywords_by_text = self.create_data_input(term_id, children, training_input_creator)
-        
+
         if len(keywords_by_text):
-            self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
+            # self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
             self.models_created += 1
 
     # Entrypoint method
@@ -257,6 +258,7 @@ class TermTrainer:
 
         children = self.thesaurus.get_by_id(term_id).get_children()
         if not children:
+            self.log.info(f"Term {term_id} has no children")
             return
         
         if (not term_is_trained):
