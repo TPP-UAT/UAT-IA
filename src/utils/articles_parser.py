@@ -80,18 +80,19 @@ def get_full_text_from_file(file_path):
         full_text += text + "\n\n"
 
     pdf_document.close()
+    save_string_to_file(full_text, 'text1.txt')
 
     # Second filter using the only the text
     # comentar esto para ver diferencias
     full_text = clean_plain_text(full_text, bold_text)
-    save_string_to_file(full_text, 'text1.txt')
+    #save_string_to_file(full_text, 'text1.txt')
 
     return full_text
 
 # Retrieve the abstract from an article
 def get_abstract_from_file(file_path):
     full_text = get_full_text_from_file(file_path)
-    regex_pattern = r'Abstract([\s\S]*?)Uniﬁed Astronomy Thesaurus concepts:'
+    regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
     extracted_text = ''
     match = re.search(regex_pattern, full_text)
 
@@ -102,7 +103,7 @@ def get_abstract_from_file(file_path):
     return extracted_text
 
 def get_keywords_from_file(file_path):
-    regex = r'Uniﬁed Astronomy Thesaurus concepts:\s*((?:[^;)]+\(\d+\);\s*)+[^;)]+\(\d+\))' # regex pattern to find URLs
+    regex = r'Unified Astronomy Thesaurus concepts:\s*((?:[^;)]+\(\d+\);\s*)+[^;)]+\(\d+\))' # regex pattern to find URLs
     text = get_full_text_from_file(file_path)
     terms = re.findall(regex, text)
     ids = []
@@ -161,16 +162,56 @@ def get_tf_idf_words_from_file(file_path, keywords_by_word):
     Params: The plain text of the full article and an array of bold texts
 '''
 def clean_plain_text(text, bold_text):
+    text = replace_special_characters(text)
+    text = join_apostrophes(text)
     text = clean_header_from_text(text)
     text = clean_orcidIds_from_text(text)
     text = clean_authors_from_text(text, bold_text)
     text = clean_references_from_text(text)
     return text
 
+def join_apostrophes(text):
+    text = re.sub(r'(\S)\s’\ss', r"\1's", text) # Join the word with ’ followed by s, converting to 's
+    text = re.sub(r'(\S)\s’', r"\1'", text) # Join the word with ’ when it's not followed by s
+    return text
+
+def replace_special_characters(text):
+    # Join to the previous and next word if there's a single space around "ﬁ"
+    text = re.sub(r'(\S)\sﬁ\s(\S)', r'\1fi\2', text)
+    
+    # Handle case of two spaces after "ﬁ", keep as separate words and remove extra space
+    text = re.sub(r'(\S)\sﬁ(\s{2,})(\S)', r'\1fi \3', text)
+    
+    # Handle case of two spaces before "ﬁ", keep as separate words and remove extra space
+    text = re.sub(r'(\s{2,})ﬁ\s(\S)', r' fi\2', text)
+
+    # Join to the previous and next word if there's a single space around "ﬂ"
+    text = re.sub(r'(\S)\sﬂ\s(\S)', r'\1fl\2', text)
+    
+    # Handle case of two spaces after "ﬂ", keep as separate words and remove extra space
+    text = re.sub(r'(\S)\sﬂ(\s{2,})(\S)', r'\1fl \3', text)
+    
+    # Handle case of two spaces before "ﬂ", keep as separate words and remove extra space
+    text = re.sub(r'(\s{2,})ﬂ\s(\S)', r' fl\2', text)
+    return text
+
 
 def clean_header_from_text(text):
     header_pattern = r"\.[^.]*The (Astrophysical Journal Supplement Series|Astronomical Journal|Astrophysical Journal Letters|Astrophysical Journal)[^.]*\."
-    return re.sub(header_pattern, ".", text)
+    matches = re.finditer(header_pattern, text)
+    sections_to_remove = []
+    
+    for match in matches:
+        section = match.group(0)
+        # If the match does NOT contain "Unified Astronomy Thesaurus concepts", add it to remove list
+        if "Unified Astronomy Thesaurus concepts" not in section:
+            sections_to_remove.append(re.escape(section))  # Escape the section for use in the regular expression
+    
+    if sections_to_remove:
+        remove_pattern = "|".join(sections_to_remove)
+        text = re.sub(remove_pattern, ".", text)
+    return text
+
 
 def clean_authors_from_text(text, bold_texts):
     # Find the index of "Abstract" in bold_texts
@@ -229,9 +270,13 @@ def clean_orcidIds_from_text(text):
 '''
 def clean_spans_from_page(spans):
     spans = clean_tables_from_text(spans)
+    print("PASO")
     spans = clean_urls_from_text(spans)
     spans = clean_equations_from_text(spans)
     spans = clean_years_from_text(spans)
+    spans = clean_example_years_from_text(spans)
+    spans = clean_parenthesis_with_years_from_text(spans)
+    spans = clean_small_references_from_text(spans)
     
     return spans
 
@@ -247,15 +292,37 @@ def clean_tables_from_text(spans):
         # Find an element that matches "Table _number_"
         for j in range(i, len(spans)):
             if re.match(r'^Table \d+', spans[j]['text']) and ".B" in spans[j]["font"]:
+                print("SPAN",spans[j]['text'], flush=True)
                 start_index = j
                 break
 
         # Find an element that matches "Note. (This usually indicates the end of the table)"
         if start_index is not None:        
-            for k in range(start_index, len(spans)):
-                if spans[k]['text'] == 'Note.' and ".B" in spans[j]["font"]:
+            for k in range(start_index + 1, len(spans)):
+                if (('References.' in spans[k]['text'] or 'Note.' in spans[k]['text'] or 'Notes.' in spans[k]['text']) and ".B" in spans[j]["font"]):
+                    #End table with Note or references
                     end_index = k + 1
                     break
+
+                if re.match(r'^Table \d+', spans[k]['text']) and ".B" in spans[k]["font"]:
+                    # Another table
+                    end_index = k-1
+                    break
+
+                if re.match(r'^Figure \d+\.', spans[k]['text']) and ".B" in spans[k]["font"]:
+                    # A figure
+                    end_index = k
+                    break
+            
+                if ('The Astrophysical' in spans[k]['text'] or 'The Astronomical' in spans[k]['text']):
+                    # A figure
+                    end_index = k
+                    for index in range(1,10):
+                        if ('et al' in spans[k+index]['text']):
+                            end_index = k + index
+                            break
+                    break
+
 
         # If both elements were found, remove the elements between them
         if start_index is not None and end_index is not None:
@@ -272,6 +339,7 @@ def clean_urls_from_text(spans):
     while i < len(spans):
         start_index = None
         end_index = None
+        should_skip = False
         text_color = 0
 
         # Find an element that matches a URL
@@ -288,6 +356,13 @@ def clean_urls_from_text(spans):
                     end_index = k
                     break
 
+        if end_index and start_index and (end_index - start_index) >= 8 and text_color == 0 :
+            should_skip = True
+
+        if should_skip:
+            i = end_index
+            start_index = None
+            end_index = None
         # If both elements were found, remove the elements between them
         if start_index is not None and end_index is not None:
             del spans[start_index:end_index]
@@ -336,18 +411,106 @@ def clean_years_from_text(spans):
     while i < len(spans):
         start_index = None
         end_index = None
-
+        should_skip = False
         # Find an element that matches a "( "
         for j in range(i, len(spans)):
             if (re.match(r'\s?\(', spans[j]['text']) and re.match(r'\d{4}', spans[j+1]['text']) and re.match(r'\s?\)', spans[j+2]['text'])):
+                if (spans[j]['color'] == 255):
+                    should_skip = True
                 start_index = j
                 end_index = j + 3
                 break
+
+        if should_skip:
+            i = end_index
+            start_index = None
+            end_index = None
+            
+        # If both elements were found, remove the elements between them
+        if start_index is not None and end_index is not None:
+            del spans[start_index:end_index]
+            i = start_index
+        else:
+            i += 1
+
+    return spans
+
+def clean_example_years_from_text(spans):
+    # We have to iterate through the spans to find the start and end of the years
+    i = 0
+    while i < len(spans):
+        start_index = None
+        end_index = None
+        # Find an element that matches a "( "
+        for j in range(i, len(spans)):
+            if(re.match(r'\s?\(', spans[j]['text']) and ("e.g." in spans[j+1]['text'])):
+                start_index = j
+                break
+
+
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                if spans[k]["text"] == ")":
+                    end_index = k + 1
+                    break
 
         # If both elements were found, remove the elements between them
         if start_index is not None and end_index is not None:
             del spans[start_index:end_index]
             i = start_index
+        else:
+            i += 1
+
+    return spans
+
+def clean_parenthesis_with_years_from_text(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        end_index = None
+        should_skip = False
+        for j in range(i, len(spans)):
+            if "(" in spans[j]["text"]:
+                start_index = j
+                break
+
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                if ")" in spans[k]['text']:
+                    end_index = k + 1
+                    if re.search(r'\d{4}', spans[k - 1]['text']):
+                        break
+                    else:
+                        should_skip = True
+                        break
+
+        if end_index and start_index and (end_index - start_index) >= 14:
+            should_skip = True
+
+        if should_skip:
+            i = end_index
+            start_index = None
+            end_index = None
+
+        if start_index is not None and end_index is not None:
+            del spans[start_index:end_index]
+            i = start_index
+        else:
+            i += 1
+    return spans
+
+def clean_small_references_from_text(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        for j in range(i, len(spans)):
+            if spans[j].get('size') == 7.044162273406982 and spans[j].get('color') == 255:
+                start_index = j
+                break
+
+        if start_index is not None:
+            del spans[start_index:start_index + 1]
+            i = start_index 
         else:
             i += 1
 
