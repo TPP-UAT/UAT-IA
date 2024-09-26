@@ -62,7 +62,7 @@ def upload_data(pdf_directory, thesaurus, database):
                 # Get the necessary information from the PDF file
                 full_text = ""  # Aquí no se utiliza get_full_text_from_file
                 keywords = get_keywords_from_file(file_path)
-                abstract = get_abstract_from_file(file_path)
+                abstract = get_abstract_from_file(file_path, True)
 
                 result = file_db.add(file_id=file_id, abstract=abstract, full_text=full_text)
                 if result != False:

@@ -27,7 +27,7 @@ def save_string_to_file(string, filename):
   try:
     with open(filename, 'w') as file:
       file.write(string)
-    print(f"String saved to file: {filename}")
+    #print(f"String saved to file: {filename}")
   except Exception as e:
     print(f"Error saving string to file: {e}")
     
@@ -50,7 +50,7 @@ def get_text_from_page(page):
     
     # Guarda los spans en un archivo
     objects_string = json.dumps(page_spans, indent=2)
-    save_string_to_file(objects_string, 'spans.txt')
+    #save_string_to_file(objects_string, 'spans.txt')
 
     # First filter using the full span element (more properties)
     # comentar esto para ver diferencias
@@ -89,8 +89,57 @@ def get_full_text_from_file(file_path):
 
     return full_text
 
+#Retrieve the title form an article
+def get_title_from_file(file_path):
+    pdf_document = fitz.open('data/' + file_path)
+    page = pdf_document[0]
+    blocks = page.get_text("dict")["blocks"]
+    spans = []
+    bold_text = []
+    title = ""
+    for block in blocks:
+        if "lines" in block:
+            for line in block["lines"]:
+                for span in line["spans"]:
+                    spans.append(span)
+                    text = span["text"]
+                    font_name = span["font"]
+
+                    if "Bold" in font_name or ".B" in font_name or "Black" in font_name:
+                        bold_text.append(text)
+
+    i = 0
+    while i < len(spans):
+        start_index = None
+        end_index = None
+
+        for j in range(i, len(spans)):
+            if spans[j]["size"] == 13.947600364685059:
+                start_index = j
+                break
+
+        # Find the ending of the title 
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                if spans[k]["size"] != 13.947600364685059:
+                    end_index = k
+                    break
+
+        # If both elements were found, remove the elements between them
+        if start_index is not None and end_index is not None:
+            for index in range(start_index, end_index):
+                if not index == end_index:
+                    title += spans[index]["text"] + ' '
+                else:
+                    title += spans[index]["text"] + '\n'
+            break
+
+    pdf_document.close()
+    return title
+
+
 # Retrieve the abstract from an article
-def get_abstract_from_file(file_path):
+def get_abstract_from_file(file_path, get_title=False):
     full_text = get_full_text_from_file(file_path)
     regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
     extracted_text = ''
@@ -100,6 +149,10 @@ def get_abstract_from_file(file_path):
         extracted_text += match.group(1) 
 
     extracted_text = extracted_text.replace('\n', ' ').strip()
+
+    if get_title:
+        extracted_text = get_title_from_file(file_path) + extracted_text
+        
     return extracted_text
 
 def get_keywords_from_file(file_path):
@@ -270,7 +323,6 @@ def clean_orcidIds_from_text(text):
 '''
 def clean_spans_from_page(spans):
     spans = clean_tables_from_text(spans)
-    print("PASO")
     spans = clean_urls_from_text(spans)
     spans = clean_equations_from_text(spans)
     spans = clean_years_from_text(spans)
@@ -292,7 +344,6 @@ def clean_tables_from_text(spans):
         # Find an element that matches "Table _number_"
         for j in range(i, len(spans)):
             if re.match(r'^Table \d+', spans[j]['text']) and ".B" in spans[j]["font"]:
-                print("SPAN",spans[j]['text'], flush=True)
                 start_index = j
                 break
 
