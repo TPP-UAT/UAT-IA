@@ -14,7 +14,7 @@ class Trainer:
         self.input_creators = [
             # NormalInputCreator(), 
             # TFIDFInputCreator(), 
-            AbstractInputCreator(thesaurus, database)
+            AbstractInputCreator(database)
         ]
 
     ''' Save Methods '''
@@ -22,6 +22,9 @@ class Trainer:
         self.save_keywords_by_term(term_trainer.get_keywords_by_term())
 
     def save_keywords_by_term(self, keywords_by_term):
+        print("Saving keywords by term", flush=True)
+        print(keywords_by_term, flush=True)
+
         file_path = "./data/keywords-by-term.json"
         
         # Check if the file already exists
@@ -45,7 +48,7 @@ class Trainer:
         for input_creator in self.input_creators:
             term_trainer = TermTrainer(self.thesaurus, self.database)
             term_trainer.train_model(term_id, input_creator)
-            # self.save_term_trainer(term_trainer)
+            self.save_term_trainer(term_trainer)
 
             del term_trainer
             gc.collect()
