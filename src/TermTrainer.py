@@ -241,7 +241,7 @@ class TermTrainer:
         texts, keywords_by_text = self.create_data_input(term_id, children, training_input_creator)
 
         if len(keywords_by_text):
-            # self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
+            self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
             self.models_created += 1
 
     # Entrypoint method
