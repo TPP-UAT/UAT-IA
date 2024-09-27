@@ -12,7 +12,7 @@ from utils.pdfs_terms_parser import upload_data
 
 if __name__ == '__main__':
     gc.set_debug(gc.DEBUG_SAVEALL)
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     
     load_dotenv() # Load environment variables
     db_url = os.getenv('DB_URL')
@@ -42,8 +42,8 @@ if __name__ == '__main__':
             # Iterate over all the children of the root term (We're missing the training for the root term)
             children = thesaurus.get_branch_children("1")
             children.insert(0, root_term)
+            print("TOTAL CHILDREN: ", len(children), flush=True)
             for child in children:
-                print("Training term id: ", child.get_id())
                 process = subprocess.Popen([sys.executable, 'src/train_term.py', child.get_id()])
                 process.wait()  # Ensure the process completes before starting the next
                 gc.collect()  # Explicitly collect garbage after each process
@@ -52,6 +52,8 @@ if __name__ == '__main__':
             predictor = Predictor(root_term.get_id(), file_to_predict)
 
             predictor.predict()
+        else:
+            print("Invalid mode")
         
         connection.close()
     except Exception as e:
