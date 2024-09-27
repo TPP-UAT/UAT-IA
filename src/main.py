@@ -34,7 +34,6 @@ if __name__ == '__main__':
         pdf_directory = "./data/PDFs"
         mapper = UATMapper("./data/UAT-filtered.json")
         thesaurus = mapper.map_to_thesaurus()
-
         if (mode == "generate"):
             upload_data(pdf_directory, thesaurus, database)
         elif (mode == "train"):

@@ -93,7 +93,7 @@ class Predictor:
     def predict(self):
         # The index of the keyword matches the position of the training input { 'term_id': index }
         keywords_by_term = self.load_keywords_by_term()
-        abstract = get_abstract_from_file('prediction_files/' + self.file_name_to_predict + '.pdf')
+        abstract = get_abstract_from_file('prediction_files/' + self.file_name_to_predict + '.pdf', True)
 
         # Iterate through the input creators
         for input_creator in self.input_creators:

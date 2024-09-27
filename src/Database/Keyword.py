@@ -11,7 +11,7 @@ class Keyword():
         new_keyword = KeywordModel(keyword_id=keyword_id, file_id=file_id, order=order)
         try:
             self.database.add(new_keyword)
-            print(f"Keyword with ID {keyword_id} added successfully.")
+            #print(f"Keyword with ID {keyword_id} added successfully.")
         except Exception as e:
             print(f"Error adding keyword: {e}")
 
