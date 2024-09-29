@@ -6,7 +6,7 @@ import logging
 
 from Database.File import File
 from Database.Keyword import Keyword
-from utils.articles_parser import get_abstract_from_file, get_full_text_from_file, get_keywords_from_file
+from utils.articles_parser import get_abstract_from_file
 
 PDFS_PATH = './PDFs'
 
@@ -56,13 +56,11 @@ def upload_data(pdf_directory, thesaurus, database):
                 # Open the PDF file
                 pdf_document = fitz.open(pdf_file_path)
                 print("Processing file ID:", filename)
-
                 log.info(f"Processing file ID: {filename}")
 
                 # Get the necessary information from the PDF file
                 full_text = ""  # Aquí no se utiliza get_full_text_from_file
-                keywords = get_keywords_from_file(file_path)
-                abstract = get_abstract_from_file(file_path, True)
+                abstract, keywords = get_abstract_from_file(file_path, True)
 
                 result = file_db.add(file_id=file_id, abstract=abstract, full_text=full_text)
                 if result != False:

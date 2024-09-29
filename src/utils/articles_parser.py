@@ -49,8 +49,10 @@ def get_text_from_page(page):
                         bold_text.append(text)
     
     # Guarda los spans en un archivo
-    objects_string = json.dumps(page_spans, indent=2)
-    #save_string_to_file(objects_string, 'spans.txt')
+    # objects_string = json.dumps(page_spans, indent=2)
+    # save_string_to_file(objects_string, 'spans.txt')
+
+    keywords = get_keywords_from_text(page_spans)
 
     # First filter using the full span element (more properties)
     # comentar esto para ver diferencias
@@ -61,22 +63,21 @@ def get_text_from_page(page):
     for span in page_spans:
         text += span["text"] + " "
 
-    return text, bold_text
+    return text, bold_text, keywords
 
 # Retrieve the full text from an article removing the unnecessary information
 def get_full_text_from_file(file_path):
     pdf_document = fitz.open('data/' + file_path)
     full_text = ""
     bold_text = []
+    keywords = []
     for page_number in range(len(pdf_document)):
         # Numero de pagina - 1 que el pdf
         page = pdf_document[page_number]
-        text, bold_text_from_page = get_text_from_page(page)
-        # text = page.get_text()
-
+        text, bold_text_from_page, keywords_by_page = get_text_from_page(page)
         # ctrl+shift+p: toggle word wrap para evitar scroll
-
         bold_text = bold_text + bold_text_from_page
+        keywords = keywords + keywords_by_page
         full_text += text + "\n\n"
 
     pdf_document.close()
@@ -85,9 +86,9 @@ def get_full_text_from_file(file_path):
     # Second filter using the only the text
     # comentar esto para ver diferencias
     full_text = clean_plain_text(full_text, bold_text)
-    #save_string_to_file(full_text, 'text1.txt')
+    # save_string_to_file(full_text, 'text2.txt')
 
-    return full_text
+    return full_text, keywords
 
 #Retrieve the title form an article
 def get_title_from_file(file_path):
@@ -140,7 +141,7 @@ def get_title_from_file(file_path):
 
 # Retrieve the abstract from an article
 def get_abstract_from_file(file_path, get_title=False):
-    full_text = get_full_text_from_file(file_path)
+    full_text, keywords = get_full_text_from_file(file_path)
     regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
     extracted_text = ''
     match = re.search(regex_pattern, full_text)
@@ -152,20 +153,41 @@ def get_abstract_from_file(file_path, get_title=False):
 
     if get_title:
         extracted_text = get_title_from_file(file_path) + extracted_text
-        
-    return extracted_text
+    
+    return extracted_text, keywords
 
-def get_keywords_from_file(file_path):
-    regex = r'Unified Astronomy Thesaurus concepts:\s*((?:[^;)]+\(\d+\);\s*)+[^;)]+\(\d+\))' # regex pattern to find URLs
-    text = get_full_text_from_file(file_path)
-    terms = re.findall(regex, text)
-    ids = []
-    if len(terms) > 0:
-        concepts = terms[0]  # Assuming there's only one match per page
+def get_keywords_from_text(spans):
+    keywords = []
+    i = 0
 
-        # Find the IDs in the terms
-        ids = re.findall(r'\((\d+)\)', concepts)
-    return ids
+    while i < len(spans):
+        start_index = None
+        end_index = None
+        # Find an element that matches a "concepts:"
+        for j in range(i, len(spans)):
+            if ("concepts:" in spans[j]['text']):
+                start_index = j
+                break
+
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                if spans[k]["text"] == "1. Introduction":
+                    end_index = k
+                    break
+
+        # If both elements were found, remove the elements between them
+        if start_index is not None and end_index is not None:
+            text = ' '
+            for index in range(start_index, end_index):
+                text += spans[index]["text"] + ' '
+            
+            ids = re.findall(r'\d+', text)
+            keywords = ids
+            break
+        else:
+            i += 1
+
+    return keywords
 
 # Retrieve the top 50 words from an article based on TF-IDF
 # keywords_by_word is a list of words that will be given a higher TF-IDF value, [] if not used
@@ -354,10 +376,9 @@ def clean_tables_from_text(spans):
                     #End table with Note or references
                     end_index = k + 1
                     break
-
                 if re.match(r'^Table \d+', spans[k]['text']) and ".B" in spans[k]["font"]:
                     # Another table
-                    end_index = k-1
+                    end_index = k - 1
                     break
 
                 if re.match(r'^Figure \d+\.', spans[k]['text']) and ".B" in spans[k]["font"]:
@@ -368,7 +389,11 @@ def clean_tables_from_text(spans):
                 if ('The Astrophysical' in spans[k]['text'] or 'The Astronomical' in spans[k]['text']):
                     # A figure
                     end_index = k
-                    for index in range(1,10):
+                    for index in range(1, 10):
+                        # Check if we reached the end of the document
+                        if (k + index >= len(spans)):
+                            end_index = k + index - 1
+                            break
                         if ('et al' in spans[k+index]['text']):
                             end_index = k + index
                             break
