@@ -4,11 +4,8 @@ from keras.models import Sequential
 from keras.layers import Embedding, LSTM, Dense, Dropout, BatchNormalization
 from keras.optimizers import Adam
 class MyHyperModel(kt.HyperModel):
-    def __init__(self, number_of_categories=2, vocab_size=1, embedding_dim=1, max_sequence_length=100):
+    def __init__(self, number_of_categories=2):
         self.number_of_categories = number_of_categories
-        self.vocab_size = vocab_size
-        self.embedding_dim = embedding_dim
-        self.max_sequence_length = max_sequence_length
 
     def build(self, hp):
         # Hyperparameters
@@ -18,10 +15,9 @@ class MyHyperModel(kt.HyperModel):
 
         # Define the optimizer
         model = Sequential()
-        model.add(Embedding(input_dim=self.vocab_size, output_dim=self.embedding_dim, input_length=self.max_sequence_length))
         model.add(Dense(units=hp_units, activation=hp_activation))
-        model.add(LSTM(128, return_sequences=True))
-        model.add(LSTM(32))
+        #model.add(LSTM(128, return_sequences=True))
+        #model.add(LSTM(32))
         model.add(BatchNormalization())
         model.add(Dropout(0.5))
         model.add(Dense(self.number_of_categories, activation='sigmoid'))  # Salida multi-etiqueta
@@ -35,7 +31,6 @@ class MyHyperModel(kt.HyperModel):
     
     def build_without_hyperparameters(self):
         model = Sequential()
-        model.add(Embedding(input_dim=self.vocab_size, output_dim=self.embedding_dim, input_length=self.max_sequence_length))
         model.add(LSTM(128, return_sequences=True))
         model.add(LSTM(32))
         model.add(Dense(64, activation='relu'))
