@@ -78,6 +78,32 @@ If the articles are inside subfolders, you need to run the file `move_files.py`.
 
 Also, the file `UAT-filtered.json` must be inside the `data` folder.
 
+To export the data generated, you must create a dump file. This can be achieved by running on a terminal (With the container up):
+
+```bash
+docker exec -t postgres_db pg_dump -U user -d UAT_IA -t files -t keywords > dump.sql
+```
+
+To import a dump file, you must place the dump file in the root directory and run the following commands:
+
+```bash
+docker cp dump.sql postgres_db:/dump.sql
+docker exec -i postgres_db psql -U user -d UAT_IA -f /dump.sql
+```
+
+NOTE: It may happen that a keyword had no files for one person, but it had for another. So, when importing the dump file, you can run:
+```
+DELETE FROM keywords k
+WHERE file_id IS NULL
+  AND EXISTS (
+    SELECT 1
+    FROM keywords k2
+    WHERE k2.keyword_id = k.keyword_id
+      AND k2.file_id IS NOT NULL
+);
+```
+
+
 ## Train option
 
 For this option, you just need to make sure the variable is set to MODE=train

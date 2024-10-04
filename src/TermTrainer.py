@@ -145,7 +145,8 @@ class TermTrainer:
                 model = self.create_model(number_of_categories, train_data, test_data, train_labels, test_labels)
             
             # Save the trained model
-            self.save_trained_model(term_id, model, training_input_creator.get_folder_name())
+            model_to_save = hypermodel if hypermodel is not None else model
+            self.save_trained_model(term_id, model_to_save, training_input_creator.get_folder_name())
 
             # Clear TensorFlow session again to free memory
             tf.keras.backend.clear_session()
