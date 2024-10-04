@@ -9,7 +9,11 @@ data_scrapper.log
 .venv
 uat_ia.egg-info
 .env
+*.sql
+*.txt
 
 !data/UAT-filtered.json
 !data/UAT-original.json
 !data/UAT-pretty.json
+!init.sql
+!requierements.txt
