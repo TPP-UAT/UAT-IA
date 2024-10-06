@@ -42,7 +42,6 @@ if __name__ == '__main__':
             # Iterate over all the children of the root term (We're missing the training for the root term)
             children = thesaurus.get_branch_children("1")
             children.insert(0, root_term)
-            print("TOTAL CHILDREN: ", len(children), flush=True)
             for child in children:
                 process = subprocess.Popen([sys.executable, 'src/train_term.py', child.get_id()])
                 process.wait()  # Ensure the process completes before starting the next

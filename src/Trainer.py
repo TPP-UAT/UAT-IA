@@ -48,7 +48,7 @@ class Trainer:
         for input_creator in self.input_creators:
             term_trainer = TermTrainer(self.thesaurus, self.database)
             term_trainer.train_model(term_id, input_creator)
-            self.save_term_trainer(term_trainer)
+            # self.save_term_trainer(term_trainer)
 
             del term_trainer
             gc.collect()
