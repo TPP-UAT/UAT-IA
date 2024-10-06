@@ -9,17 +9,16 @@ class MyHyperModel(kt.HyperModel):
 
     def build(self, hp):
         # Hyperparameters
-        hp_units = hp.Int('units', min_value=32, max_value=512, step=32)
+        hp_units = hp.Int('units', min_value=64, max_value=1024, step=64)
         hp_learning_rate = hp.Choice('learning_rate', values=[1e-2, 1e-3, 1e-4])
         hp_activation = hp.Choice('activation', values=['relu', 'sigmoid'])
+        hp_dropout = hp.Float('dropout', min_value=0.1, max_value=0.5, step=0.1)
 
         # Define the optimizer
         model = Sequential()
         model.add(Dense(units=hp_units, activation=hp_activation))
-        #model.add(LSTM(128, return_sequences=True))
-        #model.add(LSTM(32))
         model.add(BatchNormalization())
-        model.add(Dropout(0.5))
+        model.add(Dropout(hp_dropout))
         model.add(Dense(self.number_of_categories, activation='sigmoid'))  # Salida multi-etiqueta
 
         opt = Adam(learning_rate=hp_learning_rate)
