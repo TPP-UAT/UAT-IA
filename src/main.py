@@ -2,7 +2,7 @@ import gc
 import subprocess
 import sys
 import os
-import tensorflow as tf
+import spacy
 from dotenv import load_dotenv
 from UATMapper import UATMapper
 from Predictor import Predictor

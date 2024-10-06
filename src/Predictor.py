@@ -1,5 +1,5 @@
 import json
-import tensorflow as tf
+import spacy
 from TermPrediction import TermPrediction
 from utils.articles_parser import get_abstract_from_file
 import logging
@@ -45,11 +45,11 @@ class Predictor:
         return keywords_by_term
 
     def predict_terms(self, term_id, input_creator, keywords_by_term, abstract):
-        term_predicton = TermPrediction(keywords_by_term, input_creator)
+        term_prediction = TermPrediction(keywords_by_term, input_creator)
 
         predicted_terms = []
         # First parameter is an array because we can have multiple texts to predict
-        predictions = term_predicton.predict_texts([abstract], term_id, predicted_terms)
+        predictions = term_prediction.predict_texts([abstract], term_id, predicted_terms)
 
         return predictions
 
