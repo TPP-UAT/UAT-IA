@@ -11,6 +11,7 @@ uat_ia.egg-info
 .env
 *.sql
 *.txt
+models
 
 !data/UAT-filtered.json
 !data/UAT-original.json

@@ -44,30 +44,14 @@ class Predictor:
         file.close()
         return keywords_by_term
 
-    def predict_terms(self, term_id, input_creator, keywords_by_term, abstract):
-        term_prediction = TermPrediction(keywords_by_term, input_creator)
+    def predict_terms(self, term_id, input_creator, abstract):
+        term_prediction = TermPrediction(input_creator)
 
         predicted_terms = []
         # First parameter is an array because we can have multiple texts to predict
         predictions = term_prediction.predict_texts([abstract], term_id, predicted_terms)
 
         return predictions
-
-    # Entrypoint method
-    def predict(self):
-        self.log.info(f"---------------------------------")
-        self.log.info(f"Predicting for file id: {self.file_name_to_predict}")
-        # The index of the keyword matches the position of the training input { 'term_id': index }
-        keywords_by_term = self.load_keywords_by_term()
-        abstract = get_abstract_from_file('prediction_files/' + self.file_name_to_predict + '.pdf')
-
-        # Iterate through the input creators
-        for input_creator in self.input_creators:
-            self.log.info(f"Predicting with input creator: {input_creator.get_folder_name()}")
-            predictions = self.predict_terms(self.initial_term_id, input_creator, keywords_by_term, abstract)
-            self.generate_predictions(predictions)
-
-        self.print_predictions()
 
     def generate_predictions(self, predictions):
         # Combine predictions from different input creators if the term is already in the predictions
@@ -89,3 +73,19 @@ class Predictor:
             final_predictions[term_id] = final_prediction
 
         self.predictions_by_term = final_predictions
+
+    # Entrypoint method
+    def predict(self):
+        print(f"---------------------------------")
+        print(f"Predicting for file id: {self.file_name_to_predict}")
+        # The index of the keyword matches the position of the training input { 'term_id': index }
+        abstract = get_abstract_from_file('prediction_files/' + self.file_name_to_predict + '.pdf')
+        print("Abstract: ", abstract)
+
+        # Iterate through the input creators
+        for input_creator in self.input_creators:
+            self.log.info(f"Predicting with input creator: {input_creator.get_folder_name()}")
+            predictions = self.predict_terms(self.initial_term_id, input_creator, abstract)
+            self.generate_predictions(predictions)
+
+        self.print_predictions()

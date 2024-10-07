@@ -40,7 +40,8 @@ if __name__ == '__main__':
             # Create a root term
             root_term = thesaurus.get_by_id("1")
             # Iterate over all the children of the root term (We're missing the training for the root term)
-            children = thesaurus.get_branch_children("1")
+            # children = thesaurus.get_branch_children("1")
+            children = []
             children.insert(0, root_term)
             for child in children:
                 process = subprocess.Popen([sys.executable, 'src/train_term.py', child.get_id()])
