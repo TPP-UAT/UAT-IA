@@ -6,9 +6,9 @@ import json
 import numpy as np
 import tensorflow as tf
 import keras_tuner as kt
+from gensim.models import Word2Vec
+from sklearn.preprocessing import LabelEncoder
 from memory_profiler import profile
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import backend as backend
 
@@ -16,6 +16,7 @@ from Model import MyHyperModel
 from Database.Keyword import Keyword
 
 tf.get_logger().setLevel(logging.ERROR)
+logging.getLogger('gensim').setLevel(logging.ERROR)
 
 class TermTrainer:
     def __init__(self, thesaurus, database):
@@ -78,16 +79,16 @@ class TermTrainer:
             term_children_ids.insert(0, child)
 
             files_paths = keyword_db.get_file_ids_by_keyword_ids(term_children_ids)
-            for file_path in files_paths:
-                # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
-                if file_path not in files_input:
-                    files_input[file_path] = [0] * len(children)
-                files_input[file_path][keywords_indexes[child]] = 1
 
         # keywords_by_texts is an array where each document represents, on the set of children that is being trained, 
         # a 1 if it belongs to the category of the child of that position, or a 0 if it doesn't belong
-        texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
+        texts, keywords_by_text = training_input_creator.create_input_arrays(files_paths, children)
         return texts, keywords_by_text
+
+    def get_embedding(self, text, word2vec_model):
+        words = text.split()
+        word_vectors = [word2vec_model.wv[word] for word in words if word in word2vec_model.wv]
+        return np.mean(word_vectors, axis=0) if word_vectors else np.zeros(word2vec_model.vector_size)
 
     # Print memory usage in function
     # @profile
@@ -100,36 +101,34 @@ class TermTrainer:
 
         number_of_categories = len(keywords_by_text[0])
 
-        # Tokenization
-        tokenizer = Tokenizer()
-        tokenizer.fit_on_texts(texts)
-        sequences = tokenizer.texts_to_sequences(texts)
-
         # Convert sequences to fixed length vectors (padding with zeros if necessary)
-        max_sequence_length = self.get_max_texts_length(texts)
-        sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
+        tokenized_texts = [text.split() for text in texts]
+        word2vec_model = Word2Vec(sentences=tokenized_texts, vector_size=200, window=5, min_count=5, workers=4, sg=1, negative=10)
+        embeddings = np.array([self.get_embedding(text, word2vec_model) for text in texts])
+
+        labels = np.array(keywords_by_text)
 
         # Verify if you have enough data to split
-        if len(sequences_padded) <= 2 or len(keywords_by_text) <= 2:            
+        if len(texts) <= 2 or len(keywords_by_text) <= 2:            
             print("Warning: Not enough data to perform a meaningful train-test split.")
             self.log.warning(f"Not enough data to perform a meaningful train-test split for term ID: {term_id}")
         else:
             # If you have enough data, perform the split
-            train_data, test_data, train_labels, test_labels = train_test_split(sequences_padded, keywords_by_text, test_size=0.2, random_state=42)
+            train_data, test_data, train_labels, test_labels = train_test_split(embeddings, labels, test_size=0.2, random_state=42)
 
             # Convert the data to numpy arrays
             train_labels = np.array(train_labels)
             test_labels = np.array(test_labels)
 
             # Build the model
-            vocab_size = len(tokenizer.word_index) + 1
+            #vocab_size = len(tokenizer.word_index) + 1
             embedding_dim = 128
 
             if (self.hyperparameter_tuning):
-                model, hypermodel = self.tune_hp(term_id, training_input_creator, number_of_categories, max_sequence_length, train_data, test_data, train_labels, test_labels, vocab_size, embedding_dim)
+                model, hypermodel = self.tune_hp(term_id, training_input_creator, number_of_categories, train_data, test_data, train_labels, test_labels)
             else:
                 hypermodel = None
-                model = self.create_model(number_of_categories, max_sequence_length, vocab_size, embedding_dim, train_data, test_data, train_labels, test_labels)
+                model = self.create_model(number_of_categories, train_data, test_data, train_labels, test_labels)
             
             # Save the trained model
             model_to_save = hypermodel if hypermodel is not None else model
@@ -145,13 +144,11 @@ class TermTrainer:
             del test_data
             del train_labels
             del test_labels
-            del sequences_padded
-            del tokenizer
 
             gc.collect()
 
-    def create_model(self, number_of_categories, max_sequence_length, vocab_size, embedding_dim, train_data, test_data, train_labels, test_labels):
-        my_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
+    def create_model(self, number_of_categories, train_data, test_data, train_labels, test_labels):
+        my_model = MyHyperModel(number_of_categories)
         model = my_model.build_without_hyperparameters()
 
         # Train model
@@ -167,14 +164,16 @@ class TermTrainer:
         return model
 
     @profile
-    def tune_hp(self, term_id, training_input_creator, number_of_categories, max_sequence_length, train_data, test_data, train_labels, test_labels, vocab_size, embedding_dim):
+    def tune_hp(self, term_id, training_input_creator, number_of_categories, train_data, test_data, train_labels, test_labels):
         self.log.info(f"Started hyperparameters tuning: {term_id}")
 
         # Search for the best hyperparameters
-        my_hyper_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
+        my_hyper_model = MyHyperModel(number_of_categories)
         tuner = self.get_tuner_strategy('bayesian', my_hyper_model, term_id+'-'+training_input_creator.get_folder_name())
+
+        batch_size = 256
             
-        tuner.search(train_data, train_labels, epochs=20, validation_split=0.2)
+        tuner.search(train_data, train_labels, epochs=50, validation_split=0.2, batch_size=batch_size)
 
         # Get the optimal hyperparameters
         best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
@@ -187,7 +186,7 @@ class TermTrainer:
 
         # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
         model = tuner.hypermodel.build(best_hps)
-        history = model.fit(train_data, train_labels, epochs=50, validation_data=(test_data, test_labels), verbose=0)
+        history = model.fit(train_data, train_labels, epochs=50, validation_data=(test_data, test_labels), verbose=0, batch_size=batch_size)
 
         val_acc_per_epoch = history.history['val_accuracy']
         best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
@@ -196,7 +195,7 @@ class TermTrainer:
         hypermodel = tuner.hypermodel.build(best_hps)
 
         # Retrain the model
-        hypermodel.fit(train_data, train_labels, epochs=best_epoch, validation_data=(test_data, test_labels), verbose=0)
+        hypermodel.fit(train_data, train_labels, epochs=best_epoch, validation_data=(test_data, test_labels), verbose=0, batch_size=batch_size)
 
         eval_result = hypermodel.evaluate(test_data, test_labels)
         self.log.info(f"[test loss, test accuracy]: [{eval_result[0]}, {eval_result[1]}]")
@@ -220,10 +219,10 @@ class TermTrainer:
                 return kt.BayesianOptimization(
                     hyper_model,
                     objective='val_accuracy',
-                    max_trials=10,
-                    max_retries_per_trial=1,
-                    alpha=0.0001,
-                    beta=2.6,
+                    max_trials=20,
+                    max_retries_per_trial=2,
+                    alpha=0.001,
+                    beta=2.5,
                     seed=42,
                     directory='tuner',
                     project_name=project_name
