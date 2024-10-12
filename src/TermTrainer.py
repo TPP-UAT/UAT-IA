@@ -3,6 +3,7 @@ import os
 import spacy
 import random
 import logging
+from spacy.util import load_config, load_model_from_config
 from spacy.training import Example
 from spacy.tokens import DocBin
 
@@ -11,7 +12,7 @@ from Database.Keyword import Keyword
 from FileInputData import FileInputData
 
 class TermTrainer:
-    def __init__(self, thesaurus, database, model_name="en_core_web_md"):
+    def __init__(self, thesaurus, database, config_path="config.cfg"):
         """
         Initializes the TermTrainer class by loading an existing spaCy model and
         setting up the thesaurus and database.
@@ -22,7 +23,8 @@ class TermTrainer:
         """
         self.thesaurus = thesaurus
         self.database = database
-        self.nlp = spacy.blank("en")  # Load a pre-trained spaCy model
+        config = load_config(config_path)
+        self.nlp = load_model_from_config(config)  # Load a pre-trained spaCy model
 
         # Quantity of models created
         self.models_created = 0
@@ -63,7 +65,7 @@ class TermTrainer:
             term_children = self.thesaurus.get_branch_children(child)
             term_children_ids = [term.get_id() for term in term_children]
             term_children_ids.insert(0, child)
-            self.log.info(f"Child: {child.get_id()} has {len(term_children_ids)} files")
+            self.log.info(f"Child: {child} has {len(term_children_ids)} files")
 
             files_paths = keyword_table_db.get_file_ids_by_keyword_ids(term_children_ids)
             for file_path in files_paths:
@@ -85,11 +87,9 @@ class TermTrainer:
         :param examples: List of Example objects containing the training data (text and annotations)
         :param model_output: Path where the fine-tuned model will be saved
         """
+
         # Get or add the 'textcat_multilabel' component for multilabel text classification
-        if "textcat_multilabel" not in self.nlp.pipe_names:
-            textcat = self.nlp.add_pipe("textcat_multilabel", last=True)
-        else:
-            textcat = self.nlp.get_pipe("textcat_multilabel")
+        textcat = self.nlp.get_pipe("textcat_multilabel")
 
         # Add new labels to the 'textcat_multilabel' component based on the examples
         for category in categories:
@@ -107,7 +107,8 @@ class TermTrainer:
         print(f"Total documents: {len(doc_bin)}", flush=True)
     
         # Train the model for a specified number of epochs
-        optimizer = self.nlp.initialize()  # Inicializa correctamente el optimizador
+        optimizer = self.nlp.initialize()
+        # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
 
         batch_size = 100
         for i in range(30):  # Ajusta el número de épocas según sea necesario

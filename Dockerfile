@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy only the requirements file first to leverage Docker cache
 COPY requirements.txt .
 
+# Copy the spacy config file
+COPY config.cfg /app/config.cfg
+
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt 
 
