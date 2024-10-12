@@ -10,6 +10,7 @@ from memory_profiler import profile
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
+from transformers import BertTokenizer, TFBertModel  # Importamos transformers
 from tensorflow.keras import backend as backend
 
 from Model import MyHyperModel
@@ -86,7 +87,9 @@ class TermTrainer:
 
         # keywords_by_texts is an array where each document represents, on the set of children that is being trained, 
         # a 1 if it belongs to the category of the child of that position, or a 0 if it doesn't belong
+        print("LEN CHILDREN",len(children))
         texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
+
         return texts, keywords_by_text
 
     # Print memory usage in function
@@ -100,144 +103,84 @@ class TermTrainer:
 
         number_of_categories = len(keywords_by_text[0])
 
-        # Tokenization
-        tokenizer = Tokenizer()
-        tokenizer.fit_on_texts(texts)
-        sequences = tokenizer.texts_to_sequences(texts)
+        # Tokenización utilizando el tokenizer de BERT
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')  # Usamos el tokenizer de BERT
+        sequences = tokenizer(texts, padding=True, truncation=True, return_tensors='tf')
+        print("En tokenizer ", sequences["input_ids"].shape[1])
 
-        # Convert sequences to fixed length vectors (padding with zeros if necessary)
-        max_sequence_length = self.get_max_texts_length(texts)
-        sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
+        input_ids = sequences['input_ids']
+        attention_masks = sequences['attention_mask']
 
-        # Verify if you have enough data to split
-        if len(sequences_padded) <= 2 or len(keywords_by_text) <= 2:            
+        dataset = tf.data.Dataset.from_tensor_slices((input_ids, attention_masks, keywords_by_text))
+
+        # Dividir el dataset en 80% entrenamiento y 20% prueba
+        train_size = int(0.8 * len(input_ids))
+        test_size = len(input_ids) - train_size
+
+        train_data = dataset.take(train_size)
+        test_data = dataset.skip(train_size)
+
+        # Verificamos si hay suficientes datos para hacer el split
+        if len(texts) <= 2 or len(keywords_by_text) <= 2:            
             print("Warning: Not enough data to perform a meaningful train-test split.")
             self.log.warning(f"Not enough data to perform a meaningful train-test split for term ID: {term_id}")
         else:
-            # If you have enough data, perform the split
-            train_data, test_data, train_labels, test_labels = train_test_split(sequences_padded, keywords_by_text, test_size=0.2, random_state=42)
+            print("----------------------------------------------------------------")
+            print("TERM ID", term_id)
+            print("INPUT IDS", len(input_ids))
+            print("KEYWORDS BY TEXT", len(keywords_by_text))
+            print("KEYWORDS", keywords_by_text)
+            print("INPUT", input_ids)
 
-            # Convert the data to numpy arrays
-            train_labels = np.array(train_labels)
-            test_labels = np.array(test_labels)
+            print("----------------------------------------------------------------")
 
-            # Build the model
-            vocab_size = len(tokenizer.word_index) + 1
-            embedding_dim = 128
+            # Crear y entrenar el modelo basado en transformers
+            model = self.create_transformer_model(number_of_categories, train_data, test_data)
 
-            if (self.hyperparameter_tuning):
-                model, hypermodel = self.tune_hp(term_id, training_input_creator, number_of_categories, max_sequence_length, train_data, test_data, train_labels, test_labels, vocab_size, embedding_dim)
-            else:
-                hypermodel = None
-                model = self.create_model(number_of_categories, max_sequence_length, vocab_size, embedding_dim, train_data, test_data, train_labels, test_labels)
-            
-            # Save the trained model
-            model_to_save = hypermodel if hypermodel is not None else model
-            self.save_trained_model(term_id, model_to_save, training_input_creator.get_folder_name())
+            # Guardamos el modelo entrenado
+            self.save_trained_model(term_id, model, training_input_creator.get_folder_name())
 
             # Clear TensorFlow session again to free memory
             tf.keras.backend.clear_session()
 
             # Remove the models from memory
             del model
-            del hypermodel
             del train_data
             del test_data
-            del train_labels
-            del test_labels
-            del sequences_padded
-            del tokenizer
+            del input_ids
 
             gc.collect()
 
-    def create_model(self, number_of_categories, max_sequence_length, vocab_size, embedding_dim, train_data, test_data, train_labels, test_labels):
-        my_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
-        model = my_model.build_without_hyperparameters()
+    def create_transformer_model(self, number_of_categories, train_data, test_data):
+        # Cargar el modelo preentrenado de BERT
+        transformer_model = TFBertModel.from_pretrained('bert-base-uncased')
 
-        # Train model
-        epochs = 50
-        batch_size = 8
-        model.fit(train_data, train_labels, epochs=epochs, batch_size=batch_size,
-                validation_data=(test_data, test_labels), verbose=0)
+        # Construir el modelo de clasificación sobre BERT
+        print("En modelo ", train_data.shape[1])
 
-        # Evaluate model
-        loss, accuracy = model.evaluate(test_data, test_labels)
-        self.log.info(f"[test loss, test accuracy]: [{loss}, {accuracy}]")
+        input_ids = tf.keras.layers.Input(shape=(train_data.shape[1],), dtype=tf.int32, name="input_ids")
+        attention_mask = tf.keras.layers.Input(shape=(train_data.shape[1],), dtype=tf.int32, name="attention_mask")
+
+        bert_output = transformer_model(input_ids, attention_mask=attention_mask)[0]
+        cls_token = bert_output[:, 0, :]  # CLS token para la clasificación
+
+        dense = tf.keras.layers.Dense(128, activation='relu')(cls_token)
+        output = tf.keras.layers.Dense(number_of_categories, activation='sigmoid')(dense)
+
+        model = tf.keras.Model(inputs=[input_ids, attention_mask], outputs=output)
+
+        # Compilamos el modelo
+        model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=2e-5),
+                      loss='binary_crossentropy',  # Cambiamos la pérdida para multi-label
+                      metrics=['accuracy'])
+
+        # Entrenamos el modelo
+        model.fit([train_data, attention_mask], epochs=5, batch_size=8, validation_data=([test_data, attention_mask]), verbose=1)
 
         return model
 
-    @profile
-    def tune_hp(self, term_id, training_input_creator, number_of_categories, max_sequence_length, train_data, test_data, train_labels, test_labels, vocab_size, embedding_dim):
-        self.log.info(f"Started hyperparameters tuning: {term_id}")
-
-        # Search for the best hyperparameters
-        my_hyper_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
-        tuner = self.get_tuner_strategy('bayesian', my_hyper_model, term_id+'-'+training_input_creator.get_folder_name())
-            
-        tuner.search(train_data, train_labels, epochs=20, validation_split=0.2)
-
-        # Get the optimal hyperparameters
-        best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
-
-        self.log.info(f"""
-            The hyperparameter search is complete. The optimal number of units in the first densely-connected
-            layer is {best_hps.get('units')} and the optimal learning rate for the optimizer
-            is {best_hps.get('learning_rate')}.
-            """)
-
-        # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
-        model = tuner.hypermodel.build(best_hps)
-        history = model.fit(train_data, train_labels, epochs=50, validation_data=(test_data, test_labels), verbose=0)
-
-        val_acc_per_epoch = history.history['val_accuracy']
-        best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
-        self.log.info('Best epoch: %d' % (best_epoch,))
-
-        hypermodel = tuner.hypermodel.build(best_hps)
-
-        # Retrain the model
-        hypermodel.fit(train_data, train_labels, epochs=best_epoch, validation_data=(test_data, test_labels), verbose=0)
-
-        eval_result = hypermodel.evaluate(test_data, test_labels)
-        self.log.info(f"[test loss, test accuracy]: [{eval_result[0]}, {eval_result[1]}]")
-
-        # Delete tuner folder
-        subdir = "tuner" + '/' + term_id+'-'+training_input_creator.get_folder_name()
-        shutil.rmtree(subdir)
-        
-        # Delete the tuner to free memory
-        del tuner
-        gc.collect()
-
-        return model, hypermodel
-    
-    def get_tuner_strategy(self, type, hyper_model, project_name):
-        match type:
-            case 'hyperband':
-                return kt.Hyperband(hyper_model, objective="val_accuracy", max_epochs = 10, 
-                     factor = 3, directory='tuner', project_name=project_name)
-            case 'bayesian':
-                return kt.BayesianOptimization(
-                    hyper_model,
-                    objective='val_accuracy',
-                    max_trials=10,
-                    max_retries_per_trial=1,
-                    alpha=0.0001,
-                    beta=2.6,
-                    seed=42,
-                    directory='tuner',
-                    project_name=project_name
-                )
-
-    def get_max_texts_length(self, texts):
-        # Count words in each text
-        max_sequence_length = 0
-        for text in texts:
-            words = text.split()
-            if len(words) > max_sequence_length:
-                max_sequence_length = len(words)
-        return max_sequence_length
-
+    # Método para guardar el modelo entrenado
+   
     def train_group(self, term_id, children, training_input_creator):
         texts, keywords_by_text = self.create_data_input(term_id, children, training_input_creator)
 
