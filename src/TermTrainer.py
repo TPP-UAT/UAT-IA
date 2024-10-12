@@ -106,20 +106,10 @@ class TermTrainer:
         # Tokenización utilizando el tokenizer de BERT
         tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')  # Usamos el tokenizer de BERT
         sequences = tokenizer(texts, padding=True, truncation=True, return_tensors='tf')
-        print("En tokenizer ", sequences["input_ids"].shape[1])
 
         input_ids = sequences['input_ids']
         attention_masks = sequences['attention_mask']
-
-        dataset = tf.data.Dataset.from_tensor_slices((input_ids, attention_masks, keywords_by_text))
-
-        # Dividir el dataset en 80% entrenamiento y 20% prueba
-        train_size = int(0.8 * len(input_ids))
-        test_size = len(input_ids) - train_size
-
-        train_data = dataset.take(train_size)
-        test_data = dataset.skip(train_size)
-
+        
         # Verificamos si hay suficientes datos para hacer el split
         if len(texts) <= 2 or len(keywords_by_text) <= 2:            
             print("Warning: Not enough data to perform a meaningful train-test split.")
@@ -134,8 +124,15 @@ class TermTrainer:
 
             print("----------------------------------------------------------------")
 
+
+            train_data, test_data, train_labels, test_labels = train_test_split(input_ids, attention_masks, test_size=0.2, random_state=42)
+
+            # Convert the data to numpy arrays
+            train_labels = np.array(train_labels)
+            test_labels = np.array(test_labels)
+
             # Crear y entrenar el modelo basado en transformers
-            model = self.create_transformer_model(number_of_categories, train_data, test_data)
+            model = self.create_transformer_model(number_of_categories, train_data, train_labels, test_data, test_labels)
 
             # Guardamos el modelo entrenado
             self.save_trained_model(term_id, model, training_input_creator.get_folder_name())
@@ -147,17 +144,17 @@ class TermTrainer:
             del model
             del train_data
             del test_data
+            del train_labels
+            del test_labels
             del input_ids
 
             gc.collect()
 
-    def create_transformer_model(self, number_of_categories, train_data, test_data):
+    def create_transformer_model(self, number_of_categories, train_data, train_labels, test_data, test_labels):
         # Cargar el modelo preentrenado de BERT
         transformer_model = TFBertModel.from_pretrained('bert-base-uncased')
 
         # Construir el modelo de clasificación sobre BERT
-        print("En modelo ", train_data.shape[1])
-
         input_ids = tf.keras.layers.Input(shape=(train_data.shape[1],), dtype=tf.int32, name="input_ids")
         attention_mask = tf.keras.layers.Input(shape=(train_data.shape[1],), dtype=tf.int32, name="attention_mask")
 
@@ -175,7 +172,7 @@ class TermTrainer:
                       metrics=['accuracy'])
 
         # Entrenamos el modelo
-        model.fit([train_data, attention_mask], epochs=5, batch_size=8, validation_data=([test_data, attention_mask]), verbose=1)
+        model.fit([train_data, attention_mask], train_labels, epochs=5, batch_size=8, validation_data=([test_data, attention_mask], test_labels), verbose=1)
 
         return model
 
