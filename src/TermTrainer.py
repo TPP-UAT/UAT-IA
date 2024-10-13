@@ -48,7 +48,7 @@ class TermTrainer:
         train_data, test_data = self.split_data(training_data)
 
         # Train the model with the training data
-        self.train_and_save_model(training_data, children)
+        self.train_and_save_model(train_data, children)
 
         # Evaluate the model using the test set
         accuracy = self.test_model(test_data)
@@ -114,7 +114,11 @@ class TermTrainer:
             examples.append(example)
 
         scorer = self.nlp.evaluate(examples)
-        return scorer.scores["cats_acc"]  # Return the accuracy of the model
+
+        for key, value in scorer.items():
+            print(f"{key}: {value}")
+
+        return scorer["cats_score"]  # Return the accuracy of the model
 
     def train_and_save_model(self, train_data, categories):
         """
