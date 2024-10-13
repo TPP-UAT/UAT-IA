@@ -4,6 +4,7 @@ import spacy
 import random
 import logging
 from spacy.util import load_config, load_model_from_config
+from sklearn.model_selection import train_test_split
 from spacy.training import Example
 from spacy.tokens import DocBin
 
@@ -42,8 +43,16 @@ class TermTrainer:
         """
         # Prepare training data (training_data: { 'file_path': FileInputData(file_categories , text_input) })
         training_data = self.prepare_training_data(children, input_creator)
+
+        # Split data into train and test sets
+        train_data, test_data = self.split_data(training_data)
+
         # Train the model with the training data
-        self.fine_tune_spacy_model(training_data, children)
+        self.train_and_save_model(training_data, children)
+
+        # Evaluate the model using the test set
+        accuracy = self.test_model(test_data)
+        print(f"Model accuracy: {accuracy}")
 
         # Saved trained model
         self.save_trained_model(term_id, input_creator.get_folder_name())
@@ -52,6 +61,18 @@ class TermTrainer:
         # if len(keywords_by_text):
         #     self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
         #     self.models_created += 1
+    
+    def split_data(self, training_data):
+        """
+        Splits the training data into training and testing sets.
+        """
+        file_paths = list(training_data.keys())
+        train_paths, test_paths = train_test_split(file_paths, test_size=0.2, random_state=42)
+        
+        train_data = {fp: training_data[fp] for fp in train_paths}
+        test_data = {fp: training_data[fp] for fp in test_paths}
+        
+        return train_data, test_data
     
     def prepare_training_data(self, children, training_input_creator):
         keyword_table_db = Keyword(self.database)
@@ -80,7 +101,22 @@ class TermTrainer:
 
         return training_files_input
 
-    def fine_tune_spacy_model(self, train_data, categories):
+    def test_model(self, test_data):
+        """
+        Evaluates the model on the test set and returns the accuracy.
+        """
+        examples = []
+        for _, file_input_data in test_data.items():
+            text_input = file_input_data.get_text_input()
+            categories = file_input_data.get_categories()
+            doc = self.nlp.make_doc(text_input)
+            example = Example.from_dict(doc, {"cats": categories})
+            examples.append(example)
+
+        scorer = self.nlp.evaluate(examples)
+        return scorer.scores["cats_acc"]  # Return the accuracy of the model
+
+    def train_and_save_model(self, train_data, categories):
         """
         Fine-tunes the existing spaCy model by updating it with new training data.
 
