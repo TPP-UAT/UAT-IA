@@ -5,6 +5,8 @@ import shutil
 import json
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.mixed_precision import set_global_policy
+set_global_policy('mixed_float16')
 import keras_tuner as kt
 from memory_profiler import profile
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -12,6 +14,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.model_selection import train_test_split
 from transformers import BertTokenizer, TFBertModel  # Importamos transformers
 from tensorflow.keras import backend as backend
+from transformers import DistilBertTokenizer, TFDistilBertModel
 
 from Model import MyHyperModel
 from Database.Keyword import Keyword
@@ -105,7 +108,7 @@ class TermTrainer:
 
         # Tokenización utilizando el tokenizer de BERT
         tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')  # Usamos el tokenizer de BERT
-        sequences = tokenizer(texts, padding=True, truncation=True, return_tensors='tf')
+        sequences = tokenizer(texts, padding=True, truncation=True,max_length=256, return_tensors='tf')
 
         input_ids = sequences['input_ids'].numpy()
         attention_masks = sequences['attention_mask'].numpy()
@@ -149,7 +152,11 @@ class TermTrainer:
 
     def create_transformer_model(self, number_of_categories, train_data, train_labels, test_data, test_labels, train_attention_mask, test_attention_mask):
         # Cargar el modelo preentrenado de BERT
-        transformer_model = TFBertModel.from_pretrained('bert-base-uncased')
+        transformer_model = TFDistilBertModel.from_pretrained('distilbert-base-uncased')
+        
+        # Congela las capas del modelo preentrenado para evitar recalcular los pesos innecesarios.
+        for layer in transformer_model.layers:
+            layer.trainable = False    
 
         # Construir el modelo de clasificación sobre BERT
         input_ids = tf.keras.layers.Input(shape=(train_data.shape[1],), dtype=tf.int32, name="input_ids")
@@ -163,6 +170,10 @@ class TermTrainer:
 
         model = tf.keras.Model(inputs=[input_ids, attention_mask], outputs=output)
 
+
+        for layer in transformer_model.layers:
+            layer.trainable = False
+
         # Compilamos el modelo
         model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=2e-5),
                       loss='binary_crossentropy',  # Cambiamos la pérdida para multi-label
@@ -175,8 +186,10 @@ class TermTrainer:
         print("test_data:", test_data)
         print("test_labels:", test_labels)
 
-        model.fit([train_data, train_attention_mask], train_labels, epochs=5, batch_size=8, validation_data=([test_data, test_attention_mask], test_labels), verbose=1)
+        model.fit([train_data, train_attention_mask], train_labels, epochs=5, batch_size=16, validation_data=([test_data, test_attention_mask], test_labels), verbose=1)
 
+        loss, accuracy = model.evaluate(test_data, test_labels)
+        self.log.info(f"[test loss, test accuracy]: [{loss}, {accuracy}]")
         return model
 
     # Método para guardar el modelo entrenado
