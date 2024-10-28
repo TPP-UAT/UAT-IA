@@ -7,6 +7,7 @@ from spacy.util import load_config, load_model_from_config
 from sklearn.model_selection import train_test_split
 from spacy.training import Example
 from spacy.tokens import DocBin
+from spacy_transformers import Transformer
 
 
 from Database.Keyword import Keyword
@@ -25,7 +26,7 @@ class TermTrainer:
         self.thesaurus = thesaurus
         self.database = database
         config = load_config(config_path)
-        self.nlp = load_model_from_config(config)  # Load a pre-trained spaCy model
+        self.nlp = load_model_from_config(config)
 
         # Quantity of models created
         self.models_created = 0
@@ -48,11 +49,12 @@ class TermTrainer:
         train_data, test_data = self.split_data(training_data)
 
         # Train the model with the training data
-        self.train_and_save_model(train_data, children)
-
+        self.train(train_data, children)
+        print("Model trained", flush=True)
         # Evaluate the model using the test set
         accuracy = self.test_model(test_data)
         print(f"Model accuracy: {accuracy}")
+        self.log.info(f"Model accuracy: {accuracy}")
 
         # Saved trained model
         self.save_trained_model(term_id, input_creator.get_folder_name())
@@ -86,9 +88,9 @@ class TermTrainer:
             term_children = self.thesaurus.get_branch_children(child)
             term_children_ids = [term.get_id() for term in term_children]
             term_children_ids.insert(0, child)
-            self.log.info(f"Child: {child} has {len(term_children_ids)} files")
 
             files_paths = keyword_table_db.get_file_ids_by_keyword_ids(term_children_ids)
+            self.log.info(f"Child: {child} has {len(term_children_ids)} children and {len(files_paths)} files")
             for file_path in files_paths:
                 # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
                 if file_path not in training_files_input:
@@ -117,10 +119,11 @@ class TermTrainer:
 
         for key, value in scorer.items():
             print(f"{key}: {value}")
+            self.log.info(f"{key}: {value}")
 
         return scorer["cats_score"]  # Return the accuracy of the model
 
-    def train_and_save_model(self, train_data, categories):
+    def train(self, train_data, categories):
         """
         Fine-tunes the existing spaCy model by updating it with new training data.
 
@@ -129,40 +132,61 @@ class TermTrainer:
         """
 
         # Get or add the 'textcat_multilabel' component for multilabel text classification
-        textcat = self.nlp.get_pipe("textcat_multilabel")
+        if "textcat_multilabel" not in self.nlp.pipe_names:
+            textcat = self.nlp.add_pipe("textcat_multilabel", last=True)
+        else:
+            textcat = self.nlp.get_pipe("textcat_multilabel")
+
+        if "transformer" not in self.nlp.pipe_names:
+            transformer = self.nlp.add_pipe("transformer", last=True)
 
         # Add new labels to the 'textcat_multilabel' component based on the examples
         for category in categories:
+            print("Adding category: ", category, flush=True)
             if category not in textcat.labels:
                 textcat.add_label(category)
 
+        optimizer = self.nlp.initialize()
+
+        print("PIPELINE: ", self.nlp.pipe_names)
+
         doc_bin = DocBin(store_user_data=True)
-        for _, file_input_data in train_data.items():
-            text_input = file_input_data.get_text_input()
-            categories = file_input_data.get_categories()
-            doc = self.nlp.make_doc(text_input)
+        texts = [file_input_data.get_text_input() for _, file_input_data in train_data.items()]
+        categories_list = [file_input_data.get_categories() for _, file_input_data in train_data.items()]
+
+        # Batch processing the texts
+        for doc, categories in zip(self.nlp.pipe(texts), categories_list):
             doc.cats = categories  # Assign categories to the doc
             doc_bin.add(doc)  # Add the doc to the DocBin
 
         print(f"Total documents: {len(doc_bin)}", flush=True)
+        print(f"---------------------------", flush=True)
     
         # Train the model for a specified number of epochs
-        optimizer = self.nlp.initialize()
         # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
 
-        batch_size = 100
-        for i in range(30):  # Ajusta el número de épocas según sea necesario
+        batch_size = 8
+        for i in range(20):  # Adjust necessary epochs
             try: 
+                print("Epoch: ", i + 1, flush=True)
                 losses = {}
         
                 docs = list(doc_bin.get_docs(self.nlp.vocab))
+                print("Docs: ", len(docs), flush=True)
                 random.shuffle(docs)
                 
                 for batch_start in range(0, len(docs), batch_size):
+                    print("Batch start: ", batch_start, flush=True)
                     batch_docs = docs[batch_start:batch_start + batch_size]
+                    print("Batch docs: ", len(batch_docs), flush=True)
                     examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
+                    print("Examples: ", len(examples), flush=True)
                     
-                    self.nlp.update(examples, sgd=optimizer, losses=losses)
+                    try:
+                        self.nlp.update(examples, sgd=optimizer, losses=losses)
+                    except Exception as e:
+                        print("Error en la actualización:", e, flush=True)
+                    print("Losses: ", losses, flush=True)
                 
                 print(f"Epoch {i + 1} - Losses: {losses}", flush=True)
             except Exception as e:
