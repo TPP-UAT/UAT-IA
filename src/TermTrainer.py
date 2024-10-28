@@ -129,20 +129,35 @@ class TermTrainer:
         """
 
         # Get or add the 'textcat_multilabel' component for multilabel text classification
-        textcat = self.nlp.get_pipe("textcat_multilabel")
+        if "textcat_multilabel" not in self.nlp.pipe_names:
+            textcat = self.nlp.add_pipe("textcat_multilabel", last=True)
+        else:
+            textcat = self.nlp.get_pipe("textcat_multilabel")
+
+        if "ner" not in self.nlp.pipe_names:
+            ner = self.nlp.add_pipe("ner", last=True)
+        else:
+            ner = self.nlp.get_pipe("ner")
 
         # Add new labels to the 'textcat_multilabel' component based on the examples
         for category in categories:
-            if category not in textcat.labels:
-                textcat.add_label(category)
+            textcat.add_label(category)
+        for _, file_input_data in train_data.items():
+            for start, end, label in file_input_data.get_entities():
+                ner.add_label(label)
 
         doc_bin = DocBin(store_user_data=True)
         for _, file_input_data in train_data.items():
             text_input = file_input_data.get_text_input()
             categories = file_input_data.get_categories()
+            entities = file_input_data.get_entities()
+
             doc = self.nlp.make_doc(text_input)
-            doc.cats = categories  # Assign categories to the doc
-            doc_bin.add(doc)  # Add the doc to the DocBin
+            doc.cats = categories  # Categorías para textcat_multilabel
+            ents = [(ent[0], ent[1], ent[2]) for ent in entities]
+            doc.ents = [spacy.tokens.Span(doc, start, end, label=label) for start, end, label in ents]
+
+            doc_bin.add(doc)
 
         print(f"Total documents: {len(doc_bin)}", flush=True)
     
@@ -160,8 +175,8 @@ class TermTrainer:
                 
                 for batch_start in range(0, len(docs), batch_size):
                     batch_docs = docs[batch_start:batch_start + batch_size]
-                    examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
-                    
+                    examples = [Example.from_dict(doc, {"cats": doc.cats, "entities": [(ent.start_char, ent.end_char, ent.label_) for ent in doc.ents]}) for doc in batch_docs]
+                
                     self.nlp.update(examples, sgd=optimizer, losses=losses)
                 
                 print(f"Epoch {i + 1} - Losses: {losses}", flush=True)
