@@ -131,6 +131,9 @@ class TermTrainer:
         :param model_output: Path where the fine-tuned model will be saved
         """
 
+        print("USING GPU FOR SPACY TRAINING: ", spacy.prefer_gpu(), flush=True)
+        spacy.require_gpu()
+
         # Get or add the 'textcat_multilabel' component for multilabel text classification
         if "textcat_multilabel" not in self.nlp.pipe_names:
             textcat = self.nlp.add_pipe("textcat_multilabel", last=True)
@@ -169,6 +172,7 @@ class TermTrainer:
         for i in range(20):  # Adjust necessary epochs
             try: 
                 print("Epoch: ", i + 1, flush=True)
+                self.log.info(f"Epoch: {i + 1}")
                 losses = {}
         
                 docs = list(doc_bin.get_docs(self.nlp.vocab))
