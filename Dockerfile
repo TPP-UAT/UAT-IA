@@ -1,5 +1,8 @@
 # Use this version because it supports GPU with nvidia-driver-535 and above
-FROM tensorflow/tensorflow:2.14.0-gpu
+FROM nvidia/cuda:12.3.0-devel-ubuntu22.04
+
+RUN apt update && apt install -y python3 python3-pip
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # Set the working directory in the container
 WORKDIR /app
@@ -11,9 +14,9 @@ COPY requirements.txt .
 COPY config.cfg /app/config.cfg
 
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt 
+RUN python -m pip install --no-cache-dir -r requirements.txt
 
-RUN python -m spacy download en_core_web_md
+RUN python -m spacy download en_core_web_trf
 
 # Copy the rest of the application code
 COPY . .

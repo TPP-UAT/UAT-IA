@@ -218,6 +218,7 @@ class TermTrainer:
         term_is_trained = False
         folder_name = input_creator.get_folder_name()
         if os.path.exists('./models/' + folder_name):
+            # TODO: Modify this. We don't have keras
             if os.path.exists(f"./models/{folder_name}/{term_id}.keras"):
                 self.log.info(f"Model for term {term_id} already exists")
                 term_is_trained = True

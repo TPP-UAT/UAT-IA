@@ -3,6 +3,7 @@ import subprocess
 import sys
 import os
 import spacy
+import torch
 from dotenv import load_dotenv
 from UATMapper import UATMapper
 from Predictor import Predictor
@@ -20,6 +21,8 @@ if __name__ == '__main__':
     file_to_predict = os.getenv('FILE_TO_PREDICT')
 
     # Check if GPU is used
+    print(f"CUDA AVAILABLE TO USE GPU: {torch.cuda.is_available()}", flush=True)
+    print(f"SPACY GPU: {spacy.require_gpu()}", flush=True)
     # print("TensorFlow version:", tf.__version__)
     # print("Is built with CUDA:", tf.test.is_built_with_cuda())
     # print("GPU devices:", tf.config.experimental.list_physical_devices('GPU'))
