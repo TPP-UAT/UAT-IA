@@ -24,8 +24,13 @@ class TermTrainer:
         """
         self.thesaurus = thesaurus
         self.database = database
-        config = load_config(config_path)
-        self.nlp = load_model_from_config(config)  # Load a pre-trained spaCy model
+        #config = load_config(config_path)
+        #self.nlp = load_model_from_config(config)  # Load a pre-trained spaCy model
+        self.nlp = spacy.load("en_core_web_md")  # Load a pre-trained spaCy model
+
+        # Set the model's name in metadata to match the vectors specified in the config, e.g., "en_core_web_md".
+        # This does not affect model loading, but helps display the model name instead of "Pipeline".
+        #self.nlp.meta['name'] = config["paths"].get("vectors", "Pipeline")
 
         # Quantity of models created
         self.models_created = 0
@@ -47,15 +52,34 @@ class TermTrainer:
         # Split data into train and test sets
         train_data, test_data = self.split_data(training_data)
 
+        if not train_data:
+            print(f"No hay datos de entrenamiento para el término {term_id}.")
+            return
+        
+        # print("Verificando los primeros datos de entrenamiento:")
+        # for file_path, file_input_data in list(train_data.items())[:5]:  # Los primeros 5 ejemplos
+        #     print("Texto:", file_input_data.get_text_input())
+        #     print("Entidades:", file_input_data.get_entities())  # Las entidades deben estar en formato (start_char, end_char, label)
+        
+
+        
+        for file_path, file_input_data in list(train_data.items())[:5]:  # Los primeros 5 ejemplos
+            print("file_path:", file_path)
+            print("file_input_data:", file_input_data.get_text_input(), file_input_data.get_categories())
+
+        # doc = self.nlp("Apple is looking at buying U.K. startup for $1 billion")
+        # for ent in doc.ents:
+        #     print(ent.text, ent.start_char, ent.end_char, ent.label_)
+
         # Train the model with the training data
         self.train_and_save_model(train_data, children)
 
-        # Evaluate the model using the test set
-        accuracy = self.test_model(test_data)
-        print(f"Model accuracy: {accuracy}")
+        # # Evaluate the model using the test set
+        # accuracy = self.test_model(test_data)
+        # print(f"Model accuracy: {accuracy}")
 
-        # Saved trained model
-        self.save_trained_model(term_id, input_creator.get_folder_name())
+        # # Saved trained model
+        # self.save_trained_model(term_id, input_creator.get_folder_name())
 
         # Chequear como hacer si el modelo no tiene ninguna categoria con "1"
         # if len(keywords_by_text):
@@ -142,47 +166,72 @@ class TermTrainer:
         # Add new labels to the 'textcat_multilabel' component based on the examples
         for category in categories:
             textcat.add_label(category)
-        for _, file_input_data in train_data.items():
-            for start, end, label in file_input_data.get_entities():
-                ner.add_label(label)
+        # Dentro de `train_and_save_model` después de verificar que `textcat_multilabel` y `ner` están en el pipeline
+        #for _, file_input_data in train_data.items():
+            #print("--------------------------file_input_data", file_input_data)
+            # for start, end, label in file_input_data.get_entities():
+            #     print("-----------------------start, end, label", start, end, label)
+            #     ner.add_label(label)
+
+        print("Modelo cargado:", self.nlp.meta.get('name', 'No model loaded'))
 
         doc_bin = DocBin(store_user_data=True)
-        for _, file_input_data in train_data.items():
-            text_input = file_input_data.get_text_input()
-            categories = file_input_data.get_categories()
-            entities = file_input_data.get_entities()
+        texts = [file_input_data.get_text_input() for _, file_input_data in train_data.items()]
 
-            doc = self.nlp.make_doc(text_input)
-            doc.cats = categories  # Categorías para textcat_multilabel
-            ents = [(ent[0], ent[1], ent[2]) for ent in entities]
-            doc.ents = [spacy.tokens.Span(doc, start, end, label=label) for start, end, label in ents]
+        categories_list = [file_input_data.get_categories() for _, file_input_data in train_data.items()]
 
-            doc_bin.add(doc)
+        # Train the model for a specified number of epochs
+        print("self.nlp.pipe(texts)",self.nlp.pipe(texts))
+        print("categories_list",categories_list)
+        print("zip(self.nlp.pipe(texts), categories_list)",zip(self.nlp.pipe(texts), categories_list))
+        # Batch processing the texts
+        docs = self.nlp.pipe(texts)
+        print("docs",docs)
+
+        for doc, categories in zip(docs, categories_list):
+            print("ENTRA",doc)
+            print("-------DOC.TEXT", doc.text)
+            doc.cats = categories  # Assign categories to the doc
+            print("-------DOC.ENTS", doc.ents)
+
+            for ent in doc.ents:
+                print("ENTTT", ent.text, ent.startchar, ent.end_char, ent.label)
+            doc_bin.add(doc)  # Add the doc to the DocBin
 
         print(f"Total documents: {len(doc_bin)}", flush=True)
-    
-        # Train the model for a specified number of epochs
-        optimizer = self.nlp.initialize()
-        # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
-
-        batch_size = 100
-        for i in range(30):  # Ajusta el número de épocas según sea necesario
-            try: 
-                losses = {}
         
-                docs = list(doc_bin.get_docs(self.nlp.vocab))
-                random.shuffle(docs)
+        # optimizer = self.nlp.initialize()
+    
+        # # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
+
+        # batch_size = 100
+        # for i in range(30):  # Ajusta el número de épocas según sea necesario
+        #     try: 
+        #         losses = {}
+        #         docs = list(doc_bin.get_docs(self.nlp.vocab))
+        #         random.shuffle(docs)
                 
-                for batch_start in range(0, len(docs), batch_size):
-                    batch_docs = docs[batch_start:batch_start + batch_size]
-                    examples = [Example.from_dict(doc, {"cats": doc.cats, "entities": [(ent.start_char, ent.end_char, ent.label_) for ent in doc.ents]}) for doc in batch_docs]
+        #         for batch_start in range(0, len(docs), batch_size):
+        #             batch_docs = docs[batch_start:batch_start + batch_size]
+        #             examples = [Example.from_dict(doc, {"cats": doc.cats, "entities": [(ent.start_char, ent.end_char, ent.label_) for ent in doc.ents]}) for doc in batch_docs]
                 
-                    self.nlp.update(examples, sgd=optimizer, losses=losses)
+        #             self.nlp.update(examples, sgd=optimizer, losses=losses)
                 
-                print(f"Epoch {i + 1} - Losses: {losses}", flush=True)
-            except Exception as e:
-                print("Error: ", e, flush=True)
-                continue
+        #         # Imprimir pérdidas de cada época
+        #         print(f"Epoch {i + 1} - Losses: {losses}", flush=True)
+                
+        #         # Imprimir entidades detectadas en los batch_docs
+        #         for doc in batch_docs:
+        #             ents = [(ent.text, ent.label_) for ent in doc.ents]
+        #             print(f"Detected entities in document: {ents}", flush=True)
+
+        #     except Exception as e:
+        #         print("Error: ", e, flush=True)
+        #         continue
+        #     # Al final del bucle `for i in range(30):` dentro de `train_and_save_model`
+        
+
+
 
     def save_trained_model(self, term_id, folder_name):
         # Create folder if it doesn't exist
