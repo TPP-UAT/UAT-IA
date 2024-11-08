@@ -135,9 +135,6 @@ class TermTrainer:
         else:
             textcat = self.nlp.get_pipe("textcat_multilabel")
 
-        if "transformer" not in self.nlp.pipe_names:
-            transformer = self.nlp.add_pipe("transformer", last=True)
-
         # Add new labels to the 'textcat_multilabel' component based on the examples
         for category in categories:
             print("Adding category: ", category, flush=True)
@@ -163,7 +160,7 @@ class TermTrainer:
         # Train the model for a specified number of epochs
         # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
 
-        batch_size = 8
+        batch_size = 128
         for i in range(20):  # Adjust necessary epochs
             try: 
                 print("Epoch: ", i + 1, flush=True)
