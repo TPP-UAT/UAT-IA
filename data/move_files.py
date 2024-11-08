@@ -2,7 +2,7 @@ import os
 import shutil
 
 # Path to the main folder
-ruta_principal = "./PDFs"
+ruta_principal = os.getenv('DATA_PATH')
 
 # Traverse all subfolders and files
 for subdir, _, archivos in os.walk(ruta_principal):

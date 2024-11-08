@@ -1,278 +1,225 @@
-import gc
 import os
+import spacy
+import random
 import logging
-import shutil
-import json
-import numpy as np
-import tensorflow as tf
-import keras_tuner as kt
-from memory_profiler import profile
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+# from spacy.util import load_config, load_model_from_config
 from sklearn.model_selection import train_test_split
-from tensorflow.keras import backend as backend
+from spacy.training import Example
+from spacy.tokens import DocBin
 
-from Model import MyHyperModel
 from Database.Keyword import Keyword
-
-tf.get_logger().setLevel(logging.ERROR)
+from FileInputData import FileInputData
 
 class TermTrainer:
-    def __init__(self, thesaurus, database):
+    def __init__(self, thesaurus, database, config_path="config.cfg"):
+        """
+        Initializes the TermTrainer class by loading an existing spaCy model and
+        setting up the thesaurus and database.
+
+        :param thesaurus: Object that contains terms and their relationships
+        :param database: Database connection to retrieve keywords and store results
+        :param config_path: The path to the spaCy configuration file
+        """
         self.thesaurus = thesaurus
-        # { 'term_id': { 'child_term_id': keyword_index } }. This is for retrieving the index of the term_id children id in the training input for the term_id
-        self.keywords_by_term = {}
+        self.database = database
+        # config = load_config(config_path)
+        # self.nlp = load_model_from_config(config)
+        self.nlp = spacy.blank('en')
+
         # Quantity of models created
         self.models_created = 0
-        #Flag for making hyperparameter tuning
-        self.hyperparameter_tuning = True
-        # db connection
-        self.database = database
-
+        
         # Logging, change log level if needed
         logging.basicConfig(filename='logs/trainer.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         self.log = logging.getLogger('my_logger')
 
-    # Getters
-    def get_keywords_by_term(self):
-        return self.keywords_by_term
+    def train_group(self, term_id, children, input_creator):
+        """
+        Trains a spaCy model for a group of terms.
+        :param term_id: ID of the term for which the model is being trained
+        :param children: List of term objects that are children of the term
+        :param input_creator: Input creator responsible for generating data for training
+        """
+        # Prepare training data (training_data: { 'file_path': FileInputData(file_categories , text_input) })
+        training_data = self.prepare_training_data(children, input_creator)
+
+        # Split data into train and test sets
+        train_data, test_data = self.split_data(training_data)
+
+        # Train the model with the training data
+        self.train(train_data, children)
+        print("Model trained", flush=True)
+        # Evaluate the model using the test set
+        accuracy = self.test_model(test_data)
+        print(f"Model accuracy: {accuracy}")
+        self.log.info(f"Model accuracy: {accuracy}")
+
+        # Saved trained model
+        self.save_trained_model(term_id, input_creator.get_folder_name())
+
+        # Chequear como hacer si el modelo no tiene ninguna categoria con "1"
+        # if len(keywords_by_text):
+        #     self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
+        #     self.models_created += 1
     
-    def get_models_created(self):
-        return self.models_created
+    def split_data(self, training_data):
+        """
+        Splits the training data into training and testing sets.
+        """
+        file_paths = list(training_data.keys())
+        train_paths, test_paths = train_test_split(file_paths, test_size=0.2, random_state=42)
+        
+        train_data = {fp: training_data[fp] for fp in train_paths}
+        test_data = {fp: training_data[fp] for fp in test_paths}
+        
+        return train_data, test_data
     
-    '''
-        Creates the input data for the training as two arrays:
-        - texts: array of texts for traning
-        - keywords_by_text: array of arrays of keywords for each text. 1 if it matches the keyword, 0 if not
-        - keywords_indexes: The index of the keyword matches the position of the training input { 'term_id': index }
-    '''
-    def create_data_input(self, term_id, children, training_input_creator):
-        # keywords_indexes: The index of the keyword matches the position of the training input { 'term_id': index }
-        # E.g. with term_id 104: {'102': 0, '1129': 1, '1393': 2, '661': 3}
-        keywords_indexes = {}
-        keywords = []
+    def prepare_training_data(self, children, training_input_creator):
+        keyword_table_db = Keyword(self.database)
+        # training_files_input: { 'file_path': FileInputData(file_categories , text_input) }. The categories dictionaty of 0s and 1s represents the keywords for the file
+        # file_categories: {'102': 0, '1129': 0, '1393': 0, '661': 1}
+        # text_input: "e.g. abstract from an article"
+        training_files_input = {}
 
-        for i in range(len(children)):
-            child = children[i]
-            # Check if the term_files is None. If it is, it means that the term doesn't have files
-            if children[i] is not None:
-                keywords_indexes[child] = i
-
-                keyword = self.thesaurus.get_by_id(child).get_name()
-                keywords.append(keyword)
-
-        self.log.info(f"Keywords indexes: {json.dumps(keywords_indexes)}")
-        self.keywords_by_term[term_id] = keywords_indexes
-
-        # If it doesnt have keywords, the term id is not trainable
-        if len(keywords) == 0:
-            return [], [], {}
-
-        keyword_db = Keyword(self.database)
-        # files_input: { 'file_path': [0, 0, 1, 0] }. The array of 0s and 1s represents the keywords for the file
-        files_input = {}
         for child in children:
             # Get all children recursively from the child term (To associate all child files to the term child)
             term_children = self.thesaurus.get_branch_children(child)
             term_children_ids = [term.get_id() for term in term_children]
             term_children_ids.insert(0, child)
 
-            files_paths = keyword_db.get_file_ids_by_keyword_ids(term_children_ids)
+            files_paths = keyword_table_db.get_file_ids_by_keyword_ids(term_children_ids)
+            self.log.info(f"Child: {child} has {len(term_children_ids)} children and {len(files_paths)} files")
             for file_path in files_paths:
                 # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
-                if file_path not in files_input:
-                    files_input[file_path] = [0] * len(children)
-                files_input[file_path][keywords_indexes[child]] = 1
+                if file_path not in training_files_input:
+                    file_categories = { child: 0 for child in children }
+                    text_input = training_input_creator.get_file_data_input(file_path)
+                    training_files_input[file_path] = FileInputData(file_categories, text_input)
+                
+                # Set the child as category with 1 insted of 0
+                training_files_input[file_path].set_category(child)
 
-        # keywords_by_texts is an array where each document represents, on the set of children that is being trained, 
-        # a 1 if it belongs to the category of the child of that position, or a 0 if it doesn't belong
-        texts, keywords_by_text = training_input_creator.create_input_arrays(files_input, keywords)
-        return texts, keywords_by_text
+        return training_files_input
 
-    # Print memory usage in function
-    # @profile
-    def generate_model_for_group_of_terms(self, texts, keywords_by_text, term_id, training_input_creator):
-        self.log.info(f"Training with {len(texts)} files")
+    def test_model(self, test_data):
+        """
+        Evaluates the model on the test set and returns the accuracy.
+        """
+        examples = []
+        for _, file_input_data in test_data.items():
+            text_input = file_input_data.get_text_input()
+            categories = file_input_data.get_categories()
+            doc = self.nlp.make_doc(text_input)
+            example = Example.from_dict(doc, {"cats": categories})
+            examples.append(example)
 
-        # Resets all state generated by Keras for memory consumption
-        tf.keras.backend.clear_session()
-        tf.get_logger().setLevel('ERROR')
+        scorer = self.nlp.evaluate(examples)
 
-        number_of_categories = len(keywords_by_text[0])
+        for key, value in scorer.items():
+            print(f"{key}: {value}")
+            self.log.info(f"{key}: {value}")
 
-        # Tokenization
-        tokenizer = Tokenizer()
-        tokenizer.fit_on_texts(texts)
-        sequences = tokenizer.texts_to_sequences(texts)
+        return scorer["cats_score"]  # Return the accuracy of the model
 
-        # Convert sequences to fixed length vectors (padding with zeros if necessary)
-        max_sequence_length = self.get_max_texts_length(texts)
-        sequences_padded = pad_sequences(sequences, maxlen=max_sequence_length)
+    def train(self, train_data, categories):
+        """
+        Fine-tunes the existing spaCy model by updating it with new training data.
 
-        # Verify if you have enough data to split
-        if len(sequences_padded) <= 2 or len(keywords_by_text) <= 2:            
-            print("Warning: Not enough data to perform a meaningful train-test split.")
-            self.log.warning(f"Not enough data to perform a meaningful train-test split for term ID: {term_id}")
+        :param examples: List of Example objects containing the training data (text and annotations)
+        :param model_output: Path where the fine-tuned model will be saved
+        """
+
+        # Get or add the 'textcat_multilabel' component for multilabel text classification
+        if "textcat_multilabel" not in self.nlp.pipe_names:
+            textcat = self.nlp.add_pipe("textcat_multilabel", last=True)
         else:
-            # If you have enough data, perform the split
-            train_data, test_data, train_labels, test_labels = train_test_split(sequences_padded, keywords_by_text, test_size=0.2, random_state=42)
+            textcat = self.nlp.get_pipe("textcat_multilabel")
 
-            # Convert the data to numpy arrays
-            train_labels = np.array(train_labels)
-            test_labels = np.array(test_labels)
+        # Add new labels to the 'textcat_multilabel' component based on the examples
+        for category in categories:
+            print("Adding category: ", category, flush=True)
+            if category not in textcat.labels:
+                textcat.add_label(category)
 
-            # Build the model
-            vocab_size = len(tokenizer.word_index) + 1
-            embedding_dim = 128
+        optimizer = self.nlp.initialize()
 
-            if (self.hyperparameter_tuning):
-                model, hypermodel = self.tune_hp(term_id, training_input_creator, number_of_categories, max_sequence_length, train_data, test_data, train_labels, test_labels, vocab_size, embedding_dim)
-            else:
-                hypermodel = None
-                model = self.create_model(number_of_categories, max_sequence_length, vocab_size, embedding_dim, train_data, test_data, train_labels, test_labels)
-            
-            # Save the trained model
-            model_to_save = hypermodel if hypermodel is not None else model
-            self.save_trained_model(term_id, model_to_save, training_input_creator.get_folder_name())
+        print("PIPELINE: ", self.nlp.pipe_names)
 
-            # Clear TensorFlow session again to free memory
-            tf.keras.backend.clear_session()
+        doc_bin = DocBin(store_user_data=True)
+        texts = [file_input_data.get_text_input() for _, file_input_data in train_data.items()]
+        categories_list = [file_input_data.get_categories() for _, file_input_data in train_data.items()]
 
-            # Remove the models from memory
-            del model
-            del hypermodel
-            del train_data
-            del test_data
-            del train_labels
-            del test_labels
-            del sequences_padded
-            del tokenizer
+        # Batch processing the texts
+        for doc, categories in zip(self.nlp.pipe(texts), categories_list):
+            doc.cats = categories  # Assign categories to the doc
+            doc_bin.add(doc)  # Add the doc to the DocBin
 
-            gc.collect()
-
-    def create_model(self, number_of_categories, max_sequence_length, vocab_size, embedding_dim, train_data, test_data, train_labels, test_labels):
-        my_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
-        model = my_model.build_without_hyperparameters()
-
-        # Train model
-        epochs = 50
-        batch_size = 8
-        model.fit(train_data, train_labels, epochs=epochs, batch_size=batch_size,
-                validation_data=(test_data, test_labels), verbose=0)
-
-        # Evaluate model
-        loss, accuracy = model.evaluate(test_data, test_labels)
-        self.log.info(f"[test loss, test accuracy]: [{loss}, {accuracy}]")
-
-        return model
-
-    @profile
-    def tune_hp(self, term_id, training_input_creator, number_of_categories, max_sequence_length, train_data, test_data, train_labels, test_labels, vocab_size, embedding_dim):
-        self.log.info(f"Started hyperparameters tuning: {term_id}")
-
-        # Search for the best hyperparameters
-        my_hyper_model = MyHyperModel(number_of_categories, vocab_size, embedding_dim, max_sequence_length)
-        tuner = self.get_tuner_strategy('bayesian', my_hyper_model, term_id+'-'+training_input_creator.get_folder_name())
-            
-        tuner.search(train_data, train_labels, epochs=20, validation_split=0.2)
-
-        # Get the optimal hyperparameters
-        best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
-
-        self.log.info(f"""
-            The hyperparameter search is complete. The optimal number of units in the first densely-connected
-            layer is {best_hps.get('units')} and the optimal learning rate for the optimizer
-            is {best_hps.get('learning_rate')}.
-            """)
-
-        # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
-        model = tuner.hypermodel.build(best_hps)
-        history = model.fit(train_data, train_labels, epochs=50, validation_data=(test_data, test_labels), verbose=0)
-
-        val_acc_per_epoch = history.history['val_accuracy']
-        best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
-        self.log.info('Best epoch: %d' % (best_epoch,))
-
-        hypermodel = tuner.hypermodel.build(best_hps)
-
-        # Retrain the model
-        hypermodel.fit(train_data, train_labels, epochs=best_epoch, validation_data=(test_data, test_labels), verbose=0)
-
-        eval_result = hypermodel.evaluate(test_data, test_labels)
-        self.log.info(f"[test loss, test accuracy]: [{eval_result[0]}, {eval_result[1]}]")
-
-        # Delete tuner folder
-        subdir = "tuner" + '/' + term_id+'-'+training_input_creator.get_folder_name()
-        shutil.rmtree(subdir)
-        
-        # Delete the tuner to free memory
-        del tuner
-        gc.collect()
-
-        return model, hypermodel
+        print(f"Total documents: {len(doc_bin)}", flush=True)
+        print(f"---------------------------", flush=True)
     
-    def get_tuner_strategy(self, type, hyper_model, project_name):
-        match type:
-            case 'hyperband':
-                return kt.Hyperband(hyper_model, objective="val_accuracy", max_epochs = 10, 
-                     factor = 3, directory='tuner', project_name=project_name)
-            case 'bayesian':
-                return kt.BayesianOptimization(
-                    hyper_model,
-                    objective='val_accuracy',
-                    max_trials=10,
-                    max_retries_per_trial=1,
-                    alpha=0.0001,
-                    beta=2.6,
-                    seed=42,
-                    directory='tuner',
-                    project_name=project_name
-                )
+        # Train the model for a specified number of epochs
+        # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
 
-    def get_max_texts_length(self, texts):
-        # Count words in each text
-        max_sequence_length = 0
-        for text in texts:
-            words = text.split()
-            if len(words) > max_sequence_length:
-                max_sequence_length = len(words)
-        return max_sequence_length
+        batch_size = 128
+        for i in range(20):  # Adjust necessary epochs
+            try: 
+                print("Starting epoch: ", i + 1, flush=True)
+                losses = {}
+        
+                docs = list(doc_bin.get_docs(self.nlp.vocab))
+                random.shuffle(docs)
+                
+                for batch_start in range(0, len(docs), batch_size):
+                    batch_docs = docs[batch_start:batch_start + batch_size]
+                    examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
+                    
+                    try:
+                        self.nlp.update(examples, sgd=optimizer, losses=losses)
+                    except Exception as e:
+                        print("Error en la actualización:", e, flush=True)
+                
+                print(f"Epoch {i + 1} - Losses: {losses}", flush=True)
+            except Exception as e:
+                print("Error: ", e, flush=True)
+                continue
 
-    def train_group(self, term_id, children, training_input_creator):
-        texts, keywords_by_text = self.create_data_input(term_id, children, training_input_creator)
+    def save_trained_model(self, term_id, folder_name):
+        # Create folder if it doesn't exist
+        if not os.path.exists('./models/' + folder_name):
+            os.makedirs('./models/' +  folder_name)
 
-        if len(keywords_by_text):
-            self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
-            self.models_created += 1
+        model_save_path = f"./models/{folder_name}/{term_id}"
+        self.nlp.to_disk(model_save_path)
+
+        self.log.info(f"Model saved at: {model_save_path}")
 
     # Entrypoint method
-    def train_model(self, term_id, training_input_creator):
+    def train_model(self, term_id, input_creator):
+        """
+        Entrypoint method to train the spaCy model with data corresponding to a specific term.
+
+        :param term_id: ID of the term for which the model is being trained
+        :param input_creator: Input creator responsible for generating data for training
+        """
         self.log.info(f"---------------------------------")
         self.log.info(f"Started training for term ID: {term_id}")
+
         # Check if the term is already trained
         term_is_trained = False
-        folder_name = training_input_creator.get_folder_name()
+        folder_name = input_creator.get_folder_name()
         if os.path.exists('./models/' + folder_name):
             if os.path.exists(f"./models/{folder_name}/{term_id}.keras"):
                 self.log.info(f"Model for term {term_id} already exists")
                 term_is_trained = True
 
-        children = self.thesaurus.get_by_id(term_id).get_children()
-        if not children:
+        # Get children of the term
+        term_children = self.thesaurus.get_by_id(term_id).get_children()
+
+        # If the term has no children, there is no need to train a model
+        if not term_children:
             self.log.info(f"Term {term_id} has no children")
             return
         
+        # Train the model if it hasn't been trained yet
         if (not term_is_trained):
-            self.train_group(term_id, children, training_input_creator)
-            
-
-    def save_trained_model(self, term_id, model, folder_name):
-        # Create folder if it doesn't exist
-        if not os.path.exists('./models/' + folder_name):
-            os.makedirs('./models/' +  folder_name)
-
-        if model is not None:
-            model_save_path = f"./models/{folder_name}/{term_id}.keras"
-            model.save(model_save_path)
-
-        self.log.info(f"Model saved at: {model_save_path}")
+            self.train_group(term_id, term_children, input_creator)
