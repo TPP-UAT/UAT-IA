@@ -7,8 +7,13 @@ WORKDIR /app
 # Copy only the requirements file first to leverage Docker cache
 COPY requirements.txt .
 
+# Copy the spacy config file
+COPY config.cfg /app/config.cfg
+
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt 
+
+# RUN python -m spacy download en_core_web_md
 
 # Copy the rest of the application code
 COPY . .
