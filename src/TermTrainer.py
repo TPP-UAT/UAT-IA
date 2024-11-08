@@ -1,14 +1,11 @@
-import gc
 import os
 import spacy
 import random
 import logging
-from spacy.util import load_config, load_model_from_config
+# from spacy.util import load_config, load_model_from_config
 from sklearn.model_selection import train_test_split
 from spacy.training import Example
 from spacy.tokens import DocBin
-from spacy_transformers import Transformer
-
 
 from Database.Keyword import Keyword
 from FileInputData import FileInputData
@@ -21,12 +18,13 @@ class TermTrainer:
 
         :param thesaurus: Object that contains terms and their relationships
         :param database: Database connection to retrieve keywords and store results
-        :param model_name: The name of the pre-trained spaCy model to load (default: 'en_core_web_md')
+        :param config_path: The path to the spaCy configuration file
         """
         self.thesaurus = thesaurus
         self.database = database
-        config = load_config(config_path)
-        self.nlp = load_model_from_config(config)
+        # config = load_config(config_path)
+        # self.nlp = load_model_from_config(config)
+        self.nlp = spacy.blank('en')
 
         # Quantity of models created
         self.models_created = 0
