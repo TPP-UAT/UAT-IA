@@ -10,6 +10,7 @@ data_scrapper.log
 uat_ia.egg-info
 .env
 *.sql
+*.sq
 *.txt
 
 !data/UAT-filtered.json
