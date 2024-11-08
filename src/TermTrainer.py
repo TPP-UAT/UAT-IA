@@ -163,25 +163,20 @@ class TermTrainer:
         batch_size = 128
         for i in range(20):  # Adjust necessary epochs
             try: 
-                print("Epoch: ", i + 1, flush=True)
+                print("Starting epoch: ", i + 1, flush=True)
                 losses = {}
         
                 docs = list(doc_bin.get_docs(self.nlp.vocab))
-                print("Docs: ", len(docs), flush=True)
                 random.shuffle(docs)
                 
                 for batch_start in range(0, len(docs), batch_size):
-                    print("Batch start: ", batch_start, flush=True)
                     batch_docs = docs[batch_start:batch_start + batch_size]
-                    print("Batch docs: ", len(batch_docs), flush=True)
                     examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
-                    print("Examples: ", len(examples), flush=True)
                     
                     try:
                         self.nlp.update(examples, sgd=optimizer, losses=losses)
                     except Exception as e:
                         print("Error en la actualización:", e, flush=True)
-                    print("Losses: ", losses, flush=True)
                 
                 print(f"Epoch {i + 1} - Losses: {losses}", flush=True)
             except Exception as e:
