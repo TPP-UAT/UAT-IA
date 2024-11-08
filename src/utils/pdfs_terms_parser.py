@@ -11,7 +11,7 @@ from utils.articles_parser import get_abstract_from_file
 PDFS_PATH = './PDFs'
 
 # Logging, change log level if needed
-logging.basicConfig(filename='file_generation.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='logs/file_generation.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 log = logging.getLogger('my_logger')
 
 def count_files(pdf_directory):

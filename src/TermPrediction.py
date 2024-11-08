@@ -19,7 +19,7 @@ class TermPrediction:
         self.keywords_by_term = keywords_by_term
         self.input_creator = input_creator
         # Logging, change log level if needed
-        logging.basicConfig(filename='predictor.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(filename='logs/predictor.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         self.log = logging.getLogger('my_logger')
 
     def get_model_for_term(self, term_id):

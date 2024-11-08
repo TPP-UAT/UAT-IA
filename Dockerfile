@@ -1,5 +1,5 @@
 # Use this version because it supports GPU with nvidia-driver-535 and above
-FROM tensorflow/tensorflow:2.14.0-gpu
+FROM python:3.11-alpine
 
 # Set the working directory in the container
 WORKDIR /app

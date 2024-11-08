@@ -30,7 +30,7 @@ class TermTrainer:
         self.database = database
 
         # Logging, change log level if needed
-        logging.basicConfig(filename='trainer.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(filename='logs/trainer.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         self.log = logging.getLogger('my_logger')
 
     # Getters

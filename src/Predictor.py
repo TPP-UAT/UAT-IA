@@ -20,7 +20,7 @@ class Predictor:
         self.predictions = {}
         self.predictions_by_term = {}
         # Logging, change log level if needed
-        logging.basicConfig(filename='predictor.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(filename='logs/predictor.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
         self.log = logging.getLogger('my_logger')
 
     def print_predictions(self):
