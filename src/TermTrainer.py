@@ -25,8 +25,8 @@ class TermTrainer:
         """
         self.thesaurus = thesaurus
         self.database = database
-        config = load_config(config_path)
-        self.nlp = load_model_from_config(config)
+        # config = load_config(config_path)
+        self.nlp = spacy.load('en_core_web_trf')
 
         # Quantity of models created
         self.models_created = 0
@@ -130,6 +130,8 @@ class TermTrainer:
         :param examples: List of Example objects containing the training data (text and annotations)
         :param model_output: Path where the fine-tuned model will be saved
         """
+        print("Train data: ", train_data, flush=True)
+        print("Categories: ", categories, flush=True)
 
         # Get or add the 'textcat_multilabel' component for multilabel text classification
         if "textcat_multilabel" not in self.nlp.pipe_names:
@@ -137,16 +139,11 @@ class TermTrainer:
         else:
             textcat = self.nlp.get_pipe("textcat_multilabel")
 
-        if "transformer" not in self.nlp.pipe_names:
-            transformer = self.nlp.add_pipe("transformer", last=True)
-
         # Add new labels to the 'textcat_multilabel' component based on the examples
         for category in categories:
             print("Adding category: ", category, flush=True)
             if category not in textcat.labels:
                 textcat.add_label(category)
-
-        optimizer = self.nlp.initialize()
 
         print("PIPELINE: ", self.nlp.pipe_names)
 
@@ -159,12 +156,12 @@ class TermTrainer:
             doc.cats = categories  # Assign categories to the doc
             doc_bin.add(doc)  # Add the doc to the DocBin
 
+        optimizer = self.nlp.initialize # Inicializa correctamente el optimizador
+
         print(f"Total documents: {len(doc_bin)}", flush=True)
         print(f"---------------------------", flush=True)
     
         # Train the model for a specified number of epochs
-        # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
-
         batch_size = 8
         for i in range(20):  # Adjust necessary epochs
             try: 
