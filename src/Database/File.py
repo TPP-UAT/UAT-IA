@@ -16,6 +16,12 @@ class File():
         query = select(FileModel.abstract).where(FileModel.file_id == file_id)
         result = self.database.query(query).first()
         return result[0]
+    
+    def get_full_text_by_file_id(self, file_id):
+        """Get a file abstract by its file_id."""
+        query = select(FileModel.full_text).where(FileModel.file_id == file_id)
+        result = self.database.query(query).first()
+        return result[0]
 
     def get_all(self): 
         files = []

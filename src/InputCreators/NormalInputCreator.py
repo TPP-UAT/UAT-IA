@@ -13,17 +13,8 @@ class NormalInputCreator:
     def get_folder_name(self):
         return self.folder_name
 
-    def create_input_arrays(self, files_input, keywords):
-        texts = []
-        keywords_by_text = []
-
-        for file_path, file_input in files_input.items():
-            try:
-                full_text = get_full_text_from_file(file_path)
-                texts.append(full_text)
-                keywords_by_text.append(file_input)
-            except:
-                print("Error trying to load file with path: ", file_path)
-
-        return texts, keywords_by_text
-    
+    def get_file_data_input(self, file_id):
+        try:
+            return self.file_db.get_full_text_by_file_id(file_id)
+        except:
+            print("Error trying to load file with path: ", file_id)
