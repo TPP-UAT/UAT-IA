@@ -56,7 +56,7 @@ if __name__ == '__main__':
                 gc.collect()  # Explicitly collect garbage after each process
         elif (mode == "predict"):
             root_term = thesaurus.get_by_id("1")
-            predictor = Predictor(root_term.get_id(), file_to_predict)
+            predictor = Predictor(root_term.get_id(), file_to_predict, thesaurus)
 
             predictor.predict()
         else:

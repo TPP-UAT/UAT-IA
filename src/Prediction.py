@@ -3,7 +3,7 @@ class Prediction:
         self.term = term
 
         # These are arrays because we can have multiple predictions for the same term
-        self.probabilities = [probability.numpy()]
+        self.probabilities = [probability]
         self.multipliers = [multiplier]
 
     def add_probability(self, probability):

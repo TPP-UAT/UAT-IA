@@ -7,21 +7,21 @@ import logging
 from InputCreators.NormalInputCreator import NormalInputCreator
 from InputCreators.TFIDFInputCreator import TFIDFInputCreator
 from InputCreators.AbstractInputCreator import AbstractInputCreator
+logging.basicConfig(filename='logs/predictor.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Predictor:
-    def __init__(self, initial_term_id, file_name_to_predict):
+    def __init__(self, initial_term_id, file_name_to_predict, thesaurus):
         self.initial_term_id = initial_term_id
         self.file_name_to_predict = file_name_to_predict
         self.input_creators = [
-            # NormalInputCreator(), 
+            NormalInputCreator(), 
             # TFIDFInputCreator(), 
             AbstractInputCreator()
         ]
         self.predictions = {}
         self.predictions_by_term = {}
-        # Logging, change log level if needed
-        logging.basicConfig(filename='logs/predictor.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-        self.log = logging.getLogger('my_logger')
+        self.thesaurus = thesaurus
+        self.log = logging.getLogger('predictor_logger')
 
     def print_predictions(self):
         print('----------------------------- Predictions ----------------------------')
@@ -31,7 +31,9 @@ class Predictor:
 
         else:
             for term_id, prediction in self.predictions.items():
-                print(f"Term: {term_id}, Probabilities: {prediction.get_probabilities()}, Multipliers: {prediction.get_multipliers()}")
+                term_obj = self.thesaurus.get_by_id(term_id)
+                parents = term_obj.get_parents()
+                print(f"Term: {term_id}, Probabilities: {prediction.get_probabilities()}, Multipliers: {prediction.get_multipliers()}, Parents: {parents}")
 
             for term_id, final_prediction in self.predictions_by_term.items():
                 print(f"Term: {term_id}, Probability: {final_prediction}")
@@ -50,19 +52,17 @@ class Predictor:
         predicted_terms = []
         # First parameter is an array because we can have multiple texts to predict
         predictions = term_prediction.predict_texts([abstract], term_id, predicted_terms)
-
         return predictions
 
     def generate_predictions(self, predictions):
         # Combine predictions from different input creators if the term is already in the predictions
         for prediction in predictions:
-            for predicted_term in prediction:
-                if predicted_term.get_term() not in self.predictions:
-                    self.predictions[predicted_term.get_term()] = predicted_term
-                else:
-                    probability = predicted_term.get_probabilities()[0]
-                    self.predictions[predicted_term.get_term()].add_probability(probability)
-                    self.predictions[predicted_term.get_term()].add_multiplier(predicted_term.get_multipliers()[0])
+            if prediction.get_term() not in self.predictions:
+                self.predictions[prediction.get_term()] = prediction
+            else:
+                probability = prediction.get_probabilities()[0]
+                self.predictions[prediction.get_term()].add_probability(probability)
+                self.predictions[prediction.get_term()].add_multiplier(prediction.get_multipliers()[0])
 
         # Generate prediction object with the final probabilities
         final_predictions = {}

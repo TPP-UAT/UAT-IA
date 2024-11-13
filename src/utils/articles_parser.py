@@ -81,7 +81,7 @@ def get_full_text_from_file(file_path):
         full_text += text + "\n\n"
 
     pdf_document.close()
-    save_string_to_file(full_text, 'text1.txt')
+    # save_string_to_file(full_text, 'text1.txt')
 
     # Second filter using the only the text
     # comentar esto para ver diferencias
