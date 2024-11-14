@@ -12,9 +12,9 @@ class Trainer:
         self.thesaurus = thesaurus
         self.database = database
         self.input_creators = [
-            # NormalInputCreator(), 
-            # TFIDFInputCreator(), 
-            AbstractInputCreator(database)
+            NormalInputCreator(database), 
+            # TFIDFInputCreator(database), 
+            # AbstractInputCreator(database)
         ]
 
     # Entrypoint method

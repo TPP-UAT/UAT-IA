@@ -2,6 +2,7 @@ import os
 import spacy
 import random
 import logging
+import gc
 # from spacy.util import load_config, load_model_from_config
 from sklearn.model_selection import train_test_split
 from spacy.training import Example
@@ -47,7 +48,7 @@ class TermTrainer:
         train_data, test_data = self.split_data(training_data)
 
         # Train the model with the training data
-        self.train(train_data, children)
+        self.train(train_data, children, term_id)
         print("Model trained", flush=True)
         # Evaluate the model using the test set
         accuracy = self.test_model(test_data)
@@ -121,7 +122,7 @@ class TermTrainer:
 
         return scorer["cats_score"]  # Return the accuracy of the model
 
-    def train(self, train_data, categories):
+    def train(self, train_data, categories, term_id):
         """
         Fine-tunes the existing spaCy model by updating it with new training data.
 
@@ -141,40 +142,61 @@ class TermTrainer:
             if category not in textcat.labels:
                 textcat.add_label(category)
 
+        print ("Creating optimizer", flush=True)
         optimizer = self.nlp.initialize()
 
-        print("PIPELINE: ", self.nlp.pipe_names)
+        print("PIPELINE: ", self.nlp.pipe_names, flush=True)
 
-        doc_bin = DocBin(store_user_data=True)
+        # doc_bin = DocBin(store_user_data=True)
         texts = [file_input_data.get_text_input() for _, file_input_data in train_data.items()]
         categories_list = [file_input_data.get_categories() for _, file_input_data in train_data.items()]
 
-        # Batch processing the texts
-        for doc, categories in zip(self.nlp.pipe(texts), categories_list):
-            doc.cats = categories  # Assign categories to the doc
-            doc_bin.add(doc)  # Add the doc to the DocBin
-
-        print(f"Total documents: {len(doc_bin)}", flush=True)
+        print(f"Total documents: {len(texts)}", flush=True)
+        self.log.info(f"Total documents: {len(texts)}")
         print(f"---------------------------", flush=True)
     
-        # Train the model for a specified number of epochs
-        # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
+        batch_size = 40  # Start with a smaller batch size and adjust as needed
+        all_examples = []
+        
+        for i in range(0, len(texts), batch_size):
+            batch_filename = f"batches/processed_docs_{term_id}_batch_{i // batch_size}.spacy"
+            if os.path.exists(batch_filename):
+                print(f"Skipping existing batch file: {batch_filename}", flush=True)
+                continue  # Skip batch if file already exists
 
-        batch_size = 128
+            # Process and save new batch
+            print(f"Processing and saving batch {i + 1} to {i + batch_size}", flush=True)
+            batch_texts = texts[i:i + batch_size]
+            batch_categories = categories_list[i:i + batch_size]
+            doc_bin = DocBin(store_user_data=True)
+
+            for doc, categories in self.nlp.pipe(zip(batch_texts, batch_categories), as_tuples=True):
+                doc.cats = categories
+                doc_bin.add(doc)
+
+            doc_bin.to_disk(batch_filename)  # Save batch to disk
+            gc.collect()  # Free up memory
+
+        print("All batches processed", flush=True)
+        for i in range(0, len(texts), batch_size):
+            print(f"Loading batch {i + 1} to {i + batch_size}", flush=True)
+            batch_filename = f"batches/processed_docs_{term_id}_batch_{i // batch_size}.spacy"
+            doc_bin = DocBin().from_disk(batch_filename)
+            for doc in doc_bin.get_docs(self.nlp.vocab):
+                example = Example.from_dict(doc, {"cats": doc.cats})
+                all_examples.append(example)
+
         for i in range(20):  # Adjust necessary epochs
             try: 
                 print("Starting epoch: ", i + 1, flush=True)
                 losses = {}
         
-                docs = list(doc_bin.get_docs(self.nlp.vocab))
-                random.shuffle(docs)
-                
-                for batch_start in range(0, len(docs), batch_size):
-                    batch_docs = docs[batch_start:batch_start + batch_size]
-                    examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
+                random.shuffle(all_examples) 
+                for batch_start in range(0, len(all_examples), batch_size):
+                    batch_examples = all_examples[batch_start:batch_start + batch_size]
                     
                     try:
-                        self.nlp.update(examples, sgd=optimizer, losses=losses)
+                        self.nlp.update(batch_examples, sgd=optimizer, losses=losses)
                     except Exception as e:
                         print("Error en la actualización:", e, flush=True)
                 
