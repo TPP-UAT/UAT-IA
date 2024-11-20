@@ -3,6 +3,7 @@ import subprocess
 import sys
 import os
 import spacy
+import glob
 from dotenv import load_dotenv
 from UATMapper import UATMapper
 from Predictor import Predictor
@@ -17,7 +18,6 @@ if __name__ == '__main__':
     load_dotenv() # Load environment variables
     db_url = os.getenv('DB_URL')
     mode = os.getenv('MODE')
-    file_to_predict = os.getenv('FILE_TO_PREDICT')
 
     # Check if GPU is used
     # print("TensorFlow version:", tf.__version__)
@@ -56,9 +56,13 @@ if __name__ == '__main__':
                 gc.collect()  # Explicitly collect garbage after each process
         elif (mode == "predict"):
             root_term = thesaurus.get_by_id("1")
-            predictor = Predictor(root_term.get_id(), file_to_predict)
+            ruta = "./data/prediction_files/*"
 
-            predictor.predict()
+            files_to_predict = glob.glob(ruta)
+            for file_to_predict in files_to_predict:
+                file_name = os.path.splitext(os.path.basename(file_to_predict))[0]
+                predictor = Predictor(root_term.get_id(), file_name, thesaurus)
+                predictor.predict()
         else:
             print("Invalid mode")
         
