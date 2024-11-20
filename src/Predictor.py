@@ -1,7 +1,7 @@
 import json
 import spacy
 from TermPrediction import TermPrediction
-from utils.articles_parser import get_abstract_from_file
+from utils.articles_parser import get_abstract_from_file, get_full_text_from_file
 import logging
 
 from InputCreators.NormalInputCreator import NormalInputCreator
@@ -80,12 +80,13 @@ class Predictor:
         print(f"Predicting for file id: {self.file_name_to_predict}")
         # The index of the keyword matches the position of the training input { 'term_id': index }
         abstract = get_abstract_from_file('prediction_files/' + self.file_name_to_predict + '.pdf')
-        print("Abstract: ", abstract)
+        full_text = get_full_text_from_file('prediction_files/' + self.file_name_to_predict + '.pdf')
 
+        data_input = {"abstract": abstract, "normal": full_text, "tf-idf": full_text}
         # Iterate through the input creators
         for input_creator in self.input_creators:
             self.log.info(f"Predicting with input creator: {input_creator.get_folder_name()}")
-            predictions = self.predict_terms(self.initial_term_id, input_creator, abstract)
+            predictions = self.predict_terms(self.initial_term_id, input_creator, data_input[input_creator.get_folder_name()])
             self.generate_predictions(predictions)
 
         self.print_predictions()
