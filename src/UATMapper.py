@@ -1,6 +1,6 @@
 import json
-from Thesaurus import Thesaurus
-from Term import Term
+from models.Thesaurus import Thesaurus
+from models.Term import Term
 
 class UATMapper:
     def __init__(self, file_name):

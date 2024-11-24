@@ -8,7 +8,7 @@ from spacy.training import Example
 from spacy.tokens import DocBin
 
 from Database.Keyword import Keyword
-from FileInputData import FileInputData
+from models.FileInputData import FileInputData
 
 class TermTrainer:
     def __init__(self, thesaurus, database, config_path="config.cfg"):
@@ -67,7 +67,7 @@ class TermTrainer:
         Splits the training data into training and testing sets.
         """
         file_paths = list(training_data.keys())
-        train_paths, test_paths = train_test_split(file_paths, test_size=0.2, random_state=42)
+        train_paths, test_paths = train_test_split(file_paths, test_size=0.15, random_state=42)
         
         train_data = {fp: training_data[fp] for fp in train_paths}
         test_data = {fp: training_data[fp] for fp in test_paths}
@@ -208,7 +208,7 @@ class TermTrainer:
         term_is_trained = False
         folder_name = input_creator.get_folder_name()
         if os.path.exists('./models/' + folder_name):
-            if os.path.exists(f"./models/{folder_name}/{term_id}.keras"):
+            if os.path.exists(f"./models/{folder_name}/{term_id}"):
                 self.log.info(f"Model for term {term_id} already exists")
                 term_is_trained = True
 

@@ -1,7 +1,5 @@
 import fitz
 import re
-import os
-import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 equation_fonts = ["TimesLTStd-Roman",
@@ -48,14 +46,7 @@ def get_text_from_page(page):
                     if "Bold" in font_name or ".B" in font_name or "Black" in font_name:
                         bold_text.append(text)
     
-    # Guarda los spans en un archivo
-    # objects_string = json.dumps(page_spans, indent=2)
-    # save_string_to_file(objects_string, 'spans.txt')
-
-    keywords = get_keywords_from_text(page_spans)
-
     # First filter using the full span element (more properties)
-    # comentar esto para ver diferencias
     page_spans = clean_spans_from_page(page_spans)
 
     # The text is reconstructed from the spans without any line breaks
@@ -63,36 +54,14 @@ def get_text_from_page(page):
     for span in page_spans:
         text += span["text"] + " "
 
-    return text, bold_text, keywords
+    return text, bold_text
 
-# Retrieve the full text from an article removing the unnecessary information
-def get_full_text_from_file(file_path):
-    pdf_document = fitz.open('data/' + file_path)
-    full_text = ""
-    bold_text = []
-    keywords = []
-    for page_number in range(len(pdf_document)):
-        # Numero de pagina - 1 que el pdf
-        page = pdf_document[page_number]
-        text, bold_text_from_page, keywords_by_page = get_text_from_page(page)
-        # ctrl+shift+p: toggle word wrap para evitar scroll
-        bold_text = bold_text + bold_text_from_page
-        keywords = keywords + keywords_by_page
-        full_text += text + "\n\n"
+# Retrieve the title form an article
+async def get_title_from_file(file):
+    # Open the PDF file
+    file_bytes = await file.read()
+    pdf_document = fitz.open(stream=file_bytes, filetype="pdf")
 
-    pdf_document.close()
-    # save_string_to_file(full_text, 'text1.txt')
-
-    # Second filter using the only the text
-    # comentar esto para ver diferencias
-    full_text = clean_plain_text(full_text, bold_text)
-    # save_string_to_file(full_text, 'text2.txt')
-
-    return full_text, keywords
-
-#Retrieve the title form an article
-def get_title_from_file(file_path):
-    pdf_document = fitz.open('data/' + file_path)
     page = pdf_document[0]
     blocks = page.get_text("dict")["blocks"]
     spans = []
@@ -138,101 +107,6 @@ def get_title_from_file(file_path):
     pdf_document.close()
     return title
 
-
-# Retrieve the abstract from an article
-def get_abstract_from_file(file_path, get_title=False):
-    full_text, keywords = get_full_text_from_file(file_path)
-    regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
-    extracted_text = ''
-    match = re.search(regex_pattern, full_text)
-
-    if match:
-        extracted_text += match.group(1) 
-
-    extracted_text = extracted_text.replace('\n', ' ').strip()
-
-    if get_title:
-        extracted_text = get_title_from_file(file_path) + extracted_text
-    
-    return extracted_text, keywords
-
-def get_keywords_from_text(spans):
-    keywords = []
-    i = 0
-
-    while i < len(spans):
-        start_index = None
-        end_index = None
-        # Find an element that matches a "concepts:"
-        for j in range(i, len(spans)):
-            if ("concepts:" in spans[j]['text']):
-                start_index = j
-                break
-
-        if start_index is not None:
-            for k in range(start_index, len(spans)):
-                if spans[k]["text"] == "1. Introduction":
-                    end_index = k
-                    break
-
-        # If both elements were found, remove the elements between them
-        if start_index is not None and end_index is not None:
-            text = ' '
-            for index in range(start_index, end_index):
-                text += spans[index]["text"] + ' '
-            
-            ids = re.findall(r'\d+', text)
-            keywords = ids
-            break
-        else:
-            i += 1
-
-    return keywords
-
-# Retrieve the top 50 words from an article based on TF-IDF
-# keywords_by_word is a list of words that will be given a higher TF-IDF value, [] if not used
-def get_tf_idf_words_from_file(file_path, keywords_by_word):
-    full_text = get_full_text_from_file(file_path)
-
-    COMMON_WORDS = ['et', 'al', 'in', 'be', 'at', 'has', 'that', 'can', 'was', 'its', 'both', 'may', 'we', 'not', 'will', 'or', 'it', 'they', 'than', 'these', 'however', 'co', 'from', 'an', 'ah', 'for', "by", "would", "also", "to", 'and', 'the', 'this', "of", "the", "on", "as", "with", "our", "are", "is"]
-    words_quantity = 50
-
-    vectorizer = TfidfVectorizer()
-    X = vectorizer.fit_transform([full_text])
-    terms = vectorizer.get_feature_names_out()
-    common_indices = [terms.tolist().index(word) for word in COMMON_WORDS if word in terms]
-
-    # Set the TF-IDF values of the common words to 0
-    for i in range(len(X.toarray())):
-        for idx in common_indices:
-            X[i, idx] = 0.0
-
-    # If keywords_by_word is not empty, increase the TF-IDF value of the words in the list
-    X_modified = X.toarray()
-    for i in range(len(full_text)):
-        for word in keywords_by_word:
-            word_lower = word.lower() 
-            if word_lower in terms:
-                idx = terms.tolist().index(word_lower)
-                tfidf_value = X_modified[i, idx]
-                new_tfidf_value = tfidf_value * 2
-                X_modified[i, idx] = new_tfidf_value
-
-    top_words_per_document = []
-    for doc_tfidf in X_modified:
-        top_word_indices = doc_tfidf.argsort()[-words_quantity:][::-1]
-        top_words = [(terms[i], doc_tfidf[i]) for i in top_word_indices]
-        top_words_per_document.append(top_words)
-
-    top_words_strings = []
-    for doc_tfidf in X_modified:
-        top_word_indices = doc_tfidf.argsort()[-words_quantity:][::-1]
-        top_words = [terms[i] for i in top_word_indices]
-        top_words_string = ' '.join(top_words)
-        top_words_strings.append(top_words_string)
-
-    return top_words_strings
-
 ''' Cleans the text by applying a series of text processing functions 
     Params: The plain text of the full article and an array of bold texts
 '''
@@ -270,7 +144,6 @@ def replace_special_characters(text):
     text = re.sub(r'(\s{2,})ﬂ\s(\S)', r' fl\2', text)
     return text
 
-
 def clean_header_from_text(text):
     header_pattern = r"\.[^.]*The (Astrophysical Journal Supplement Series|Astronomical Journal|Astrophysical Journal Letters|Astrophysical Journal)[^.]*\."
     matches = re.finditer(header_pattern, text)
@@ -286,7 +159,6 @@ def clean_header_from_text(text):
         remove_pattern = "|".join(sections_to_remove)
         text = re.sub(remove_pattern, ".", text)
     return text
-
 
 def clean_authors_from_text(text, bold_texts):
     # Find the index of "Abstract" in bold_texts
@@ -322,7 +194,6 @@ def clean_authors_from_text(text, bold_texts):
 
     return result_text
 
-
 def clean_references_from_text(text):
     #Removes all content from the last occurrence of 'References' to the end.
     last_occurrence = text.rfind("References")
@@ -331,7 +202,6 @@ def clean_references_from_text(text):
     else:
         return text
     
-
 def clean_orcidIds_from_text(text):
     #Removes all content from the last occurrence of 'ORCID iDs' to the end."
     last_occurrence = text.rfind("ORCID iDs")
@@ -591,3 +461,109 @@ def clean_small_references_from_text(spans):
             i += 1
 
     return spans
+
+'''
+    Text getting functions
+'''
+# Retrieve the abstract from an article
+async def get_abstract_from_file(file, get_title=False):
+    full_text = await get_full_text_from_file(file)
+    regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
+    extracted_text = ''
+    match = re.search(regex_pattern, full_text)
+
+    if match:
+        extracted_text += match.group(1) 
+
+    extracted_text = extracted_text.replace('\n', ' ').strip()
+
+    if get_title:
+        extracted_text = await get_title_from_file(file) + extracted_text
+    
+    return extracted_text
+
+# Retrieve the full text from an article removing the unnecessary information
+async def get_full_text_from_file(file):
+    # Open the PDF file
+    file_bytes = await file.read()
+    pdf_document = fitz.open(stream=file_bytes, filetype="pdf")
+
+    full_text = ""
+    bold_text = []
+    for page_number in range(len(pdf_document)):
+        # Numero de pagina - 1 que el pdf
+        page = pdf_document[page_number]
+        text, bold_text_from_page = get_text_from_page(page)
+        # ctrl+shift+p: toggle word wrap para evitar scroll
+        bold_text = bold_text + bold_text_from_page
+        full_text += text + "\n\n"
+
+    pdf_document.close()
+
+    # Second filter using the only the text
+    full_text = clean_plain_text(full_text, bold_text)
+
+    return full_text
+
+'''
+Retrieve abstract and full text from an article
+'''
+async def get_text_from_file(file, get_title=False):
+    full_text = await get_full_text_from_file(file)
+    regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
+    abstract_text = ''
+    match = re.search(regex_pattern, full_text)
+
+    if match:
+        abstract_text += match.group(1) 
+
+    abstract_text = abstract_text.replace('\n', ' ').strip()
+
+    if get_title:
+        abstract_text = await get_title_from_file(file) + abstract_text
+    
+    return abstract_text, full_text
+
+# Retrieve the top 50 words from an article based on TF-IDF
+# keywords_by_word is a list of words that will be given a higher TF-IDF value, [] if not used
+def get_tf_idf_words_from_file(file_path, keywords_by_word):
+    full_text = get_full_text_from_file(file_path)
+
+    COMMON_WORDS = ['et', 'al', 'in', 'be', 'at', 'has', 'that', 'can', 'was', 'its', 'both', 'may', 'we', 'not', 'will', 'or', 'it', 'they', 'than', 'these', 'however', 'co', 'from', 'an', 'ah', 'for', "by", "would", "also", "to", 'and', 'the', 'this', "of", "the", "on", "as", "with", "our", "are", "is"]
+    words_quantity = 50
+
+    vectorizer = TfidfVectorizer()
+    X = vectorizer.fit_transform([full_text])
+    terms = vectorizer.get_feature_names_out()
+    common_indices = [terms.tolist().index(word) for word in COMMON_WORDS if word in terms]
+
+    # Set the TF-IDF values of the common words to 0
+    for i in range(len(X.toarray())):
+        for idx in common_indices:
+            X[i, idx] = 0.0
+
+    # If keywords_by_word is not empty, increase the TF-IDF value of the words in the list
+    X_modified = X.toarray()
+    for i in range(len(full_text)):
+        for word in keywords_by_word:
+            word_lower = word.lower() 
+            if word_lower in terms:
+                idx = terms.tolist().index(word_lower)
+                tfidf_value = X_modified[i, idx]
+                new_tfidf_value = tfidf_value * 2
+                X_modified[i, idx] = new_tfidf_value
+
+    top_words_per_document = []
+    for doc_tfidf in X_modified:
+        top_word_indices = doc_tfidf.argsort()[-words_quantity:][::-1]
+        top_words = [(terms[i], doc_tfidf[i]) for i in top_word_indices]
+        top_words_per_document.append(top_words)
+
+    top_words_strings = []
+    for doc_tfidf in X_modified:
+        top_word_indices = doc_tfidf.argsort()[-words_quantity:][::-1]
+        top_words = [terms[i] for i in top_word_indices]
+        top_words_string = ' '.join(top_words)
+        top_words_strings.append(top_words_string)
+
+    return top_words_strings

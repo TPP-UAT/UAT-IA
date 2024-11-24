@@ -1,5 +1,4 @@
 import gc
-import sys
 from UATMapper import UATMapper
 
 def calculate_distances(predicted_ids, original_ids):
@@ -23,8 +22,19 @@ def calculate_distances(predicted_ids, original_ids):
 
 if __name__ == '__main__':
     gc.set_debug(gc.DEBUG_SAVEALL)
-    predicted_ids = ["1145", "804", "486"]
-    original_ids = ["343", "1383", "1338", "1345", "799"]
+    predicted_ids = ["104",
+        "1145",
+        "1476",
+        "1529",
+        "1583",
+        "343",
+        "486",
+        "563",
+        "739",
+        "804",
+        "847"
+    ]
+    original_ids = ["622", "1880", "595", "415", "356", "1772"]
 
     result = calculate_distances(predicted_ids, original_ids)
     

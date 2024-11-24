@@ -2,13 +2,9 @@ import gc
 import subprocess
 import sys
 import os
-import spacy
-import glob
 from dotenv import load_dotenv
 from UATMapper import UATMapper
-from Predictor import Predictor
 from Database.Database import Database
-from Database.Keyword import Keyword
 from utils.pdfs_terms_parser import upload_data 
 
 if __name__ == '__main__':
@@ -54,15 +50,6 @@ if __name__ == '__main__':
                 process = subprocess.Popen([sys.executable, 'src/train_term.py', child.get_id()])
                 process.wait()  # Ensure the process completes before starting the next
                 gc.collect()  # Explicitly collect garbage after each process
-        elif (mode == "predict"):
-            root_term = thesaurus.get_by_id("1")
-            ruta = "./data/prediction_files/*"
-
-            files_to_predict = glob.glob(ruta)
-            for file_to_predict in files_to_predict:
-                file_name = os.path.splitext(os.path.basename(file_to_predict))[0]
-                predictor = Predictor(root_term.get_id(), file_name, thesaurus)
-                predictor.predict()
         else:
             print("Invalid mode")
         
