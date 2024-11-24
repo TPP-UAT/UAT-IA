@@ -13,9 +13,11 @@ uat_ia.egg-info
 *.sq
 *.txt
 models
+__pycache__
 
 !data/UAT-filtered.json
 !data/UAT-original.json
 !data/UAT-pretty.json
 !init.sql
 !requierements.txt
+!src/models
