@@ -41,10 +41,10 @@ if __name__ == '__main__':
             children.insert(0, root_term)
 
             # Only for testing purposes
-            eleven_children = root_term.get_children()
-            for child_id in eleven_children:
-                children.append(thesaurus.get_by_id(child_id))
-            print("CHILDREN: ", children)
+            # eleven_children = root_term.get_children()
+            # for child_id in eleven_children:
+            #     children.append(thesaurus.get_by_id(child_id))
+            # print("CHILDREN: ", children)
         
             for child in children:
                 process = subprocess.Popen([sys.executable, 'src/train_term.py', child.get_id()])

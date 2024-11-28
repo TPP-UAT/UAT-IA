@@ -530,7 +530,7 @@ def get_tf_idf_words_from_file(file_path, keywords_by_word):
     full_text = get_full_text_from_file(file_path)
 
     COMMON_WORDS = ['et', 'al', 'in', 'be', 'at', 'has', 'that', 'can', 'was', 'its', 'both', 'may', 'we', 'not', 'will', 'or', 'it', 'they', 'than', 'these', 'however', 'co', 'from', 'an', 'ah', 'for', "by", "would", "also", "to", 'and', 'the', 'this', "of", "the", "on", "as", "with", "our", "are", "is"]
-    words_quantity = 50
+    words_quantity = 150
 
     vectorizer = TfidfVectorizer()
     X = vectorizer.fit_transform([full_text])
@@ -544,14 +544,14 @@ def get_tf_idf_words_from_file(file_path, keywords_by_word):
 
     # If keywords_by_word is not empty, increase the TF-IDF value of the words in the list
     X_modified = X.toarray()
-    for i in range(len(full_text)):
-        for word in keywords_by_word:
-            word_lower = word.lower() 
-            if word_lower in terms:
-                idx = terms.tolist().index(word_lower)
-                tfidf_value = X_modified[i, idx]
-                new_tfidf_value = tfidf_value * 2
-                X_modified[i, idx] = new_tfidf_value
+    # for i in range(len(full_text)):
+    #     for word in keywords_by_word:
+    #         word_lower = word.lower() 
+    #         if word_lower in terms:
+    #             idx = terms.tolist().index(word_lower)
+    #             tfidf_value = X_modified[i, idx]
+    #             new_tfidf_value = tfidf_value * 2
+    #             X_modified[i, idx] = new_tfidf_value
 
     top_words_per_document = []
     for doc_tfidf in X_modified:

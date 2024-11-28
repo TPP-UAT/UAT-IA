@@ -73,3 +73,17 @@ class Keyword():
                 file_ids.append(file_id)
         
         return file_ids
+    
+    def get_keywords_by_file_id(self, file_id):
+        """Get all keyword_ids associated with a given file_id."""
+        keyword_ids = []
+        query = select(KeywordModel.keyword_id).where(KeywordModel.file_id == file_id)
+
+        results = self.database.query(query)
+
+        for result in results:
+            keyword_id = result[0]
+            if keyword_id is not None:
+                keyword_ids.append(keyword_id)
+    
+        return keyword_ids
