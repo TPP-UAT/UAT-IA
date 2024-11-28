@@ -18,7 +18,7 @@ class SummarizeInputCreator:
     def get_folder_name(self):
         return self.folder_name
     
-    def summarize_text(self, text, percentage=0.2):
+    def summarize_text(self, text, percentage=0.1):
 # Process the text with spaCy
         doc = self.nlp(text)
         

@@ -2,6 +2,7 @@ import gc
 import subprocess
 import sys
 import os
+from InputCreators.SummarizeInputCreator import SummarizeInputCreator
 from dotenv import load_dotenv
 from UATMapper import UATMapper
 from Database.Database import Database
@@ -50,6 +51,24 @@ if __name__ == '__main__':
                 process = subprocess.Popen([sys.executable, 'src/train_term.py', child.get_id()])
                 process.wait()  # Ensure the process completes before starting the next
                 gc.collect()  # Explicitly collect garbage after each process
+        elif (mode == "regenerate"):
+            all_files = database.get_all_files()
+            summarizeInputCreator = SummarizeInputCreator(database)
+        for file in all_files:
+            file_id = file["file_id"]
+            full_text = file["full_text"]
+
+            if not full_text:  # Ignorar archivos sin texto
+                print(f"No full_text found for file_id {file_id}")
+                continue
+
+            # Generar resumen
+            try:
+                summary = summarizeInputCreator.summarize_text(full_text)
+                # Actualizar el resumen en la base de datos
+                database.update_file_summary(file_id, summary)
+            except Exception as e:
+                print(f"Error processing file_id {file_id}: {e}")
         else:
             print("Invalid mode")
         
