@@ -1,8 +1,10 @@
 import fitz
 import re
+import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 equation_fonts = ["TimesLTStd-Roman",
+                  "TimesLTStd-BoldItalic",
                    "STIXTwoMath", 
                    "TimesLTStd-Italic", 
                    "EuclidSymbol", 
@@ -10,7 +12,12 @@ equation_fonts = ["TimesLTStd-Roman",
                    "STIXGeneral-Regular", 
                    "EuclidSymbol-Italic",
                    "AdvTTab7e17fd+22",
-                   "EuclidMathTwo"
+                   "EuclidMathTwo",
+                   "EuclidMathOne",
+                   "EuclidExtra",
+                   "EuclidSymbol-BoldItalic",
+                   "AdvOTb4af3d5d.I",
+                   "AdvOT564e738a.BI"
                    ]
 
 # TODO: Delete this function
@@ -30,7 +37,7 @@ def save_string_to_file(string, filename):
     print(f"Error saving string to file: {e}")
     
 # Retrieves the text from a page and returns it filtered by different criteria
-def get_text_from_page(page):
+def get_text_from_page(page, remove_abstract):
     blocks = page.get_text("dict")["blocks"]
 
     page_spans = []
@@ -46,22 +53,27 @@ def get_text_from_page(page):
                     if "Bold" in font_name or ".B" in font_name or "Black" in font_name:
                         bold_text.append(text)
     
+    # Guarda los spans en un archivo
+    # objects_string = json.dumps(page_spans, indent=2)
+    # save_string_to_file(objects_string, 'spans1.txt')
+
+    keywords = get_keywords_from_text(page_spans)
+
     # First filter using the full span element (more properties)
-    page_spans = clean_spans_from_page(page_spans)
+    page_spans = clean_spans_from_page(page_spans, remove_abstract)
+    # objects_string2 = json.dumps(page_spans, indent=2)
+    # save_string_to_file(objects_string2, 'spans2.txt')
 
     # The text is reconstructed from the spans without any line breaks
     text = ""
     for span in page_spans:
         text += span["text"] + " "
 
-    return text, bold_text
+    return text, bold_text, keywords
 
 # Retrieve the title form an article
-async def get_title_from_file(file):
-    # Open the PDF file
-    file_bytes = await file.read()
-    pdf_document = fitz.open(stream=file_bytes, filetype="pdf")
-
+def get_title_from_file(file_path):
+    pdf_document = fitz.open('data/' + file_path)
     page = pdf_document[0]
     blocks = page.get_text("dict")["blocks"]
     spans = []
@@ -107,6 +119,39 @@ async def get_title_from_file(file):
     pdf_document.close()
     return title
 
+def get_keywords_from_text(spans):
+    keywords = []
+    i = 0
+
+    while i < len(spans):
+        start_index = None
+        end_index = None
+        # Find an element that matches a "concepts:"
+        for j in range(i, len(spans)):
+            if ("concepts:" in spans[j]['text']):
+                start_index = j
+                break
+
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                if spans[k]["text"] == "1. Introduction":
+                    end_index = k
+                    break
+
+        # If both elements were found, remove the elements between them
+        if start_index is not None and end_index is not None:
+            text = ' '
+            for index in range(start_index, end_index):
+                text += spans[index]["text"] + ' '
+            
+            ids = re.findall(r'\d+', text)
+            keywords = ids
+            break
+        else:
+            i += 1
+
+    return keywords
+
 ''' Cleans the text by applying a series of text processing functions 
     Params: The plain text of the full article and an array of bold texts
 '''
@@ -117,6 +162,8 @@ def clean_plain_text(text, bold_text):
     text = clean_orcidIds_from_text(text)
     text = clean_authors_from_text(text, bold_text)
     text = clean_references_from_text(text)
+    text = clean_erratum_from_text(text)
+    text = fix_word_breaks(text)
     return text
 
 def join_apostrophes(text):
@@ -145,7 +192,7 @@ def replace_special_characters(text):
     return text
 
 def clean_header_from_text(text):
-    header_pattern = r"\.[^.]*The (Astrophysical Journal Supplement Series|Astronomical Journal|Astrophysical Journal Letters|Astrophysical Journal)[^.]*\."
+    header_pattern = r"The (Astrophysical Journal Supplement Series|Astronomical Journal|Astrophysical Journal Letters|Astrophysical Journal)[^.]*\."
     matches = re.finditer(header_pattern, text)
     sections_to_remove = []
     
@@ -194,39 +241,60 @@ def clean_authors_from_text(text, bold_texts):
 
     return result_text
 
+# Removes all content from the last occurrence of 'References' to the end.
 def clean_references_from_text(text):
-    #Removes all content from the last occurrence of 'References' to the end.
     last_occurrence = text.rfind("References")
     if last_occurrence != -1:
         return text[:last_occurrence]
     else:
         return text
     
+# Removes all content from the last occurrence of 'Erratum' to the end.
+def clean_erratum_from_text(text):
+    last_occurrence = text.rfind("Erratum")
+    if last_occurrence != -1:
+        return text[:last_occurrence]
+    else:
+        return text
+
+# Removes all content from the last occurrence of 'ORCID iDs' to the end."
 def clean_orcidIds_from_text(text):
-    #Removes all content from the last occurrence of 'ORCID iDs' to the end."
     last_occurrence = text.rfind("ORCID iDs")
     if last_occurrence != -1:
         return text[:last_occurrence]
     else:
         return text
 
+# Fix word breaks when a line finishes with a "-". E.g. "This is a long- " and continues on the next line
+def fix_word_breaks(text):
+    fixed_text = re.sub(r'(\w+)-\s+(\w+)', r'\1\2', text)
+    return fixed_text
+
 ''' Cleans the text as spans by applying a series of text processing functions 
     Params: The spans from each page
 '''
-def clean_spans_from_page(spans):
-    spans = clean_tables_from_text(spans)
-    spans = clean_urls_from_text(spans)
-    spans = clean_equations_from_text(spans)
-    spans = clean_years_from_text(spans)
-    spans = clean_example_years_from_text(spans)
-    spans = clean_parenthesis_with_years_from_text(spans)
-    spans = clean_small_references_from_text(spans)
+def clean_spans_from_page(spans, remove_abstract):
+    spans = clean_tables_from_spans(spans)
+    spans = clean_urls_from_spans(spans)
+    spans = clean_equations_from_spans(spans)
+    spans = clean_years_from_spans(spans)
+    spans = clean_example_years_from_spans(spans)
+    spans = clean_parenthesis_with_years_from_spans(spans)
+    spans = clean_small_references_from_spans(spans)
+    if (remove_abstract):
+        spans = clean_authors_and_abstract_from_spans(spans)
+    spans = clean_metadata_from_spans(spans)
+    spans = clean_titles_from_spans(spans)
+    spans = clean_parenthesis_with_references_from_spans(spans)
+    spans = clean_symbols_from_spans(spans)
+    spans = clean_orcids_from_spans(spans)
+    spans = clean_page_number_from_spans(spans)
     
     return spans
 
 # Removes the tables from the text (Between "Table _number_" and "Note.")
 # TODO: Improve the table detection if Note. is not present (Using position?)
-def clean_tables_from_text(spans):
+def clean_tables_from_spans(spans):
     # We have to iterate through the spans to find the start and end of the tables
     i = 0
     while i < len(spans):
@@ -279,7 +347,7 @@ def clean_tables_from_text(spans):
         
     return spans
 
-def clean_urls_from_text(spans):
+def clean_urls_from_spans(spans):
     # We have to iterate through the spans to find the start and end of the links
     i = 0
     while i < len(spans):
@@ -318,7 +386,7 @@ def clean_urls_from_text(spans):
 
     return spans
 
-def clean_equations_from_text(spans):
+def clean_equations_from_spans(spans):
     # We have to iterate through the spans to find the start and end of the equations
     i = 0
     while i < len(spans):
@@ -351,7 +419,7 @@ def clean_equations_from_text(spans):
 
     return spans
 
-def clean_years_from_text(spans):
+def clean_years_from_spans(spans):
     # We have to iterate through the spans to find the start and end of the years
     i = 0
     while i < len(spans):
@@ -363,14 +431,14 @@ def clean_years_from_text(spans):
             if (re.match(r'\s?\(', spans[j]['text']) and re.match(r'\d{4}', spans[j+1]['text']) and re.match(r'\s?\)', spans[j+2]['text'])):
                 if (spans[j]['color'] == 255):
                     should_skip = True
+                
                 start_index = j
                 end_index = j + 3
                 break
 
         if should_skip:
             i = end_index
-            start_index = None
-            end_index = None
+            continue
             
         # If both elements were found, remove the elements between them
         if start_index is not None and end_index is not None:
@@ -381,7 +449,8 @@ def clean_years_from_text(spans):
 
     return spans
 
-def clean_example_years_from_text(spans):
+# Removes examples years in parenthesis like (e.g. Author 2019). BUG: If the first span is ") (" it will not be removed
+def clean_example_years_from_spans(spans):
     # We have to iterate through the spans to find the start and end of the years
     i = 0
     while i < len(spans):
@@ -389,7 +458,8 @@ def clean_example_years_from_text(spans):
         end_index = None
         # Find an element that matches a "( "
         for j in range(i, len(spans)):
-            if(re.match(r'\s?\(', spans[j]['text']) and ("e.g." in spans[j+1]['text'])):
+            words = ["e.g.", "e.g.,"]
+            if(re.match(r'\s?\(', spans[j]['text']) and any(words in spans[j+1]['text'] for words in words)):
                 start_index = j
                 break
 
@@ -409,14 +479,14 @@ def clean_example_years_from_text(spans):
 
     return spans
 
-def clean_parenthesis_with_years_from_text(spans):
+def clean_parenthesis_with_years_from_spans(spans):
     i = 0
     while i < len(spans):
         start_index = None
         end_index = None
         should_skip = False
         for j in range(i, len(spans)):
-            if "(" in spans[j]["text"]:
+            if "(" in spans[j]["text"] and spans[j]["color"] == 0:
                 start_index = j
                 break
 
@@ -430,7 +500,7 @@ def clean_parenthesis_with_years_from_text(spans):
                         should_skip = True
                         break
 
-        if end_index and start_index and (end_index - start_index) >= 14:
+        if end_index and start_index and (end_index - start_index) >= 30:
             should_skip = True
 
         if should_skip:
@@ -445,7 +515,7 @@ def clean_parenthesis_with_years_from_text(spans):
             i += 1
     return spans
 
-def clean_small_references_from_text(spans):
+def clean_small_references_from_spans(spans):
     i = 0
     while i < len(spans):
         start_index = None
@@ -462,12 +532,231 @@ def clean_small_references_from_text(spans):
 
     return spans
 
+# Cleans small text like header and footer (e.g. Original content..., Published by..., The Astrophysical Journal...)
+def clean_metadata_from_spans(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        for j in range(i, len(spans)):
+            allowed_sizes = [5.977700233459473, 7.970200061798096, 6.339683532714844]
+            if spans[j].get('size') in allowed_sizes:
+                start_index = j
+                break
+
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                 # Reached End of page
+                 if (k + 1) == len(spans):
+                    end_index = k + 1
+                    break
+                 # Check if the next element is not a small text
+                 disallowed_sizes = [5.977700233459473, 7.970200061798096, 6.339683532714844]
+                 if spans[k].get('size') not in disallowed_sizes:
+                    # print("REMOVED: ", spans[k]['text'], flush=True)
+                    end_index = k
+                    break
+
+        if start_index is not None and end_index is not None:
+            del spans[start_index:end_index]
+            i = start_index
+        else:
+            i += 1
+
+    return spans
+
+# Cleans everything between title and text (Abstract, Keywords, Authors). Adds an enter after the title
+def clean_authors_and_abstract_from_spans(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        end_index = None
+        # Find the end of the title text
+        for j in range(i, len(spans)):
+            if (spans[j].get('size') == 13.947600364685059 and ".B" in spans[j]["font"] and ".B" not in spans[j + 1]["font"]):                
+                start_index = j + 1
+                break
+            # If the abstract occupies more than one page, we need to check for "Introduction" and remove everything until there
+            if "1. Introduction" in spans[j]['text']:
+                start_index = 0
+                end_index = j + 1
+                del spans[start_index:end_index]
+                return spans
+
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                if "1. Introduction" in spans[k]['text']:
+                    end_index = k + 1
+                    break
+
+        # If the abstract occupies more than one page, we need to remove everything until the end of the page from the title
+        if end_index is None:
+            end_index = len(spans)
+
+        if start_index is not None and end_index is not None:
+            del spans[start_index:end_index]
+            
+            # Create line break span
+            empty_span = {
+                "text": "\n",
+                "size": 13.947600364685059,
+                "font": "TimesLTStd-Roman",
+                "color": 0
+            }
+            spans.insert(start_index, empty_span)
+
+            i = start_index
+        else:
+            i += 1
+    return spans
+
+# Cleans titles and subtitles from the text (Sections, subsections)
+def clean_titles_from_spans(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        # Find the end of the title text
+        for j in range(i, len(spans)):
+            # Find "1. Introduction" in bold or "1.1. Introduction" in italic
+            if ((re.match(r'^\d+\.\s', spans[j]['text']) and ".B" in spans[j]["font"]) or
+                ("Appendix" in spans[j]['text'] and ".B" in spans[j]["font"]) or
+                (re.match(r'^\d+\.\d+\.\s', spans[j]['text']) and ".I" in spans[j]["font"])):
+                start_index = j
+                break
+
+        if start_index is not None:
+            del spans[start_index:start_index + 1]
+            i = start_index 
+        else:
+            i += 1
+
+    return spans
+
+# Cleans parenthesis with references from the text like "(see Figure 5)"
+def clean_parenthesis_with_references_from_spans(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        end_index = None
+        # Find the start of parenthesis and the word "see "
+        for j in range(i, len(spans) - 1):
+            words = ["see", "Figure", "Figures", "Table", "Section"]
+            if ("(" in spans[j]["text"] and any(word in spans[j + 1]["text"] for word in words)):
+                start_index = j
+                break
+
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                # Find the end of the parenthesis. If there's another parenthesis inside, skip it. E.g. (see Figure 5(a), left)
+                if ")" in spans[k]["text"] and "(" not in spans[k - 2]["text"]:
+                    end_index = k + 1
+                    break
+
+        if start_index is not None and end_index is not None:
+            del spans[start_index:end_index]
+            i = start_index
+        else:
+            i += 1
+    return spans
+
+# Cleans symbols like (Greater-than or equal to) and (Less-than or equal to) that are not displayed correctly
+def clean_symbols_from_spans(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        # Find the end of the title text
+        for j in range(i, len(spans)):
+            # Find weird simbols like (Greater-than or equal to) and (Less-than or equal to)
+            symbols = ["\uf088", "\uf089", "\u0084", "\u0085", "\uf0d1"]
+            if (any(symbol in spans[j]['text'] for symbol in symbols)):
+                start_index = j
+                break
+
+        if start_index is not None:
+            del spans[start_index:start_index + 1]
+            i = start_index 
+        else:
+            i += 1
+
+    return spans
+
+# Clean the ORCID iDs from the text (Probably in last page). From the start of the ORCID iDs to the end of the page
+def clean_orcids_from_spans(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        end_index = None
+        # Find the start of parenthesis and the word "see "
+        for j in range(i, len(spans)):
+            if ("ORCID iDs" in spans[j]["text"] and ".B" in spans[j]["font"]):
+                start_index = j
+                end_index = len(spans)
+                break
+
+        if start_index is not None:
+            del spans[start_index:end_index]
+            i = start_index
+        else:
+            i += 1
+    return spans
+
+# If the last span is a number, it's probably a page number. Remove it
+def clean_page_number_from_spans(spans):
+    i = 0
+    while i < len(spans):
+        start_index = None
+        for j in range(i, len(spans)):
+            if (re.match(r'\d+', spans[j]['text']) and j == len(spans) - 1):
+                start_index = j
+                break
+
+        if start_index is not None:
+            del spans[start_index:start_index + 1]
+            i = start_index 
+        else:
+            i += 1
+
+    return spans
+
 '''
-    Text getting functions
+Cleans summarized text by applying a series of text processing functions 
 '''
+def clean_summarized_text(text):
+    text = clean_parentesis_from_text(text)
+    return text
+
+def clean_parentesis_from_text(text):
+    # Remove everything between parenthesis in text
+    text = re.sub(r'\([^)]*\)', '', text)
+    return text
+
+# Retrieve the full text from an article removing the unnecessary information
+def get_full_text_from_file(file_path, remove_abstract=True):
+    pdf_document = fitz.open('data/' + file_path)
+    full_text = ""
+    bold_text = []
+    keywords = []
+    for page_number in range(len(pdf_document)):
+        # Numero de pagina - 1 que el pdf
+        page = pdf_document[page_number]
+        text, bold_text_from_page, keywords_by_page = get_text_from_page(page, remove_abstract)
+        # ctrl+shift+p: toggle word wrap para evitar scroll
+        bold_text = bold_text + bold_text_from_page
+        keywords = keywords + keywords_by_page
+        full_text += text + ""
+
+    pdf_document.close()
+    # save_string_to_file(full_text, 'text1.txt')
+
+    # Second filter using the only the text
+    # comentar esto para ver diferencias
+    full_text = clean_plain_text(full_text, bold_text)
+    # save_string_to_file(full_text, 'text2.txt')
+
+    return full_text, keywords
+
 # Retrieve the abstract from an article
-async def get_abstract_from_file(file, get_title=False):
-    full_text = await get_full_text_from_file(file)
+def get_abstract_from_file(file_path, get_title=False):
+    full_text, keywords = get_full_text_from_file(file_path, False)
     regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
     extracted_text = ''
     match = re.search(regex_pattern, full_text)
@@ -478,51 +767,9 @@ async def get_abstract_from_file(file, get_title=False):
     extracted_text = extracted_text.replace('\n', ' ').strip()
 
     if get_title:
-        extracted_text = await get_title_from_file(file) + extracted_text
+        extracted_text = get_title_from_file(file_path) + extracted_text
     
-    return extracted_text
-
-# Retrieve the full text from an article removing the unnecessary information
-async def get_full_text_from_file(file):
-    # Open the PDF file
-    file_bytes = await file.read()
-    pdf_document = fitz.open(stream=file_bytes, filetype="pdf")
-
-    full_text = ""
-    bold_text = []
-    for page_number in range(len(pdf_document)):
-        # Numero de pagina - 1 que el pdf
-        page = pdf_document[page_number]
-        text, bold_text_from_page = get_text_from_page(page)
-        # ctrl+shift+p: toggle word wrap para evitar scroll
-        bold_text = bold_text + bold_text_from_page
-        full_text += text + "\n\n"
-
-    pdf_document.close()
-
-    # Second filter using the only the text
-    full_text = clean_plain_text(full_text, bold_text)
-
-    return full_text
-
-'''
-Retrieve abstract and full text from an article
-'''
-async def get_text_from_file(file, get_title=False):
-    full_text = await get_full_text_from_file(file)
-    regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
-    abstract_text = ''
-    match = re.search(regex_pattern, full_text)
-
-    if match:
-        abstract_text += match.group(1) 
-
-    abstract_text = abstract_text.replace('\n', ' ').strip()
-
-    if get_title:
-        abstract_text = await get_title_from_file(file) + abstract_text
-    
-    return abstract_text, full_text
+    return extracted_text, keywords
 
 # Retrieve the top 50 words from an article based on TF-IDF
 # keywords_by_word is a list of words that will be given a higher TF-IDF value, [] if not used

@@ -2,10 +2,11 @@ import os
 import spacy
 import random
 import logging
-# from spacy.util import load_config, load_model_from_config
+from spacy.util import load_config, load_model_from_config
 from sklearn.model_selection import train_test_split
 from spacy.training import Example
 from spacy.tokens import DocBin
+from spacy.pipeline.textcat_multilabel import Config
 
 from Database.Keyword import Keyword
 from models.FileInputData import FileInputData
@@ -22,9 +23,9 @@ class TermTrainer:
         """
         self.thesaurus = thesaurus
         self.database = database
-        # config = load_config(config_path)
-        # self.nlp = load_model_from_config(config)
-        self.nlp = spacy.blank('en')
+        config = load_config(config_path)
+        self.nlp = load_model_from_config(config)
+        # self.nlp = spacy.blank('en')
 
         # Quantity of models created
         self.models_created = 0
@@ -42,6 +43,11 @@ class TermTrainer:
         """
         # Prepare training data (training_data: { 'file_path': FileInputData(file_categories , text_input) })
         training_data = self.prepare_training_data(children, input_creator)
+
+        if training_data:
+            first_file_path = next(iter(training_data))  # Obtener la primera clave del diccionario
+            first_file_data = training_data[first_file_path]  # Obtener el valor correspondiente
+            print(f"Text input for the first file: {first_file_data.get_text_input()}", flush=True)
 
         # Split data into train and test sets
         train_data, test_data = self.split_data(training_data)
@@ -89,12 +95,18 @@ class TermTrainer:
 
             files_paths = keyword_table_db.get_file_ids_by_keyword_ids(term_children_ids)
             self.log.info(f"Child: {child} has {len(term_children_ids)} children and {len(files_paths)} files")
+            file_count = 0
             for file_path in files_paths:
                 # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
                 if file_path not in training_files_input:
                     file_categories = { child: 0 for child in children }
                     text_input = training_input_creator.get_file_data_input(file_path)
                     training_files_input[file_path] = FileInputData(file_categories, text_input)
+                    if (file_count % 50 == 0):
+                        print("--------------------------------------------------", flush=True)
+                        print(f"Training file {file_count}", flush=True)
+                        self.log.info(f"Training file {file_count}")
+                    file_count += 1
                 
                 # Set the child as category with 1 insted of 0
                 training_files_input[file_path].set_category(child)
@@ -128,7 +140,6 @@ class TermTrainer:
         :param examples: List of Example objects containing the training data (text and annotations)
         :param model_output: Path where the fine-tuned model will be saved
         """
-
         # Get or add the 'textcat_multilabel' component for multilabel text classification
         if "textcat_multilabel" not in self.nlp.pipe_names:
             textcat = self.nlp.add_pipe("textcat_multilabel", last=True)
@@ -159,9 +170,8 @@ class TermTrainer:
     
         # Train the model for a specified number of epochs
         # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
-
         batch_size = 128
-        for i in range(20):  # Adjust necessary epochs
+        for i in range(30):  # Adjust necessary epochs
             try: 
                 print("Starting epoch: ", i + 1, flush=True)
                 losses = {}

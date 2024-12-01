@@ -59,8 +59,13 @@ def upload_data(pdf_directory, thesaurus, database):
                 log.info(f"Processing file ID: {filename}")
 
                 # Get the necessary information from the PDF file
-                full_text = get_full_text_from_file(file_path)
-                abstract, keywords = get_abstract_from_file(file_path, True)
+                try:
+                    full_text = get_full_text_from_file(file_path)
+                    abstract, keywords = get_abstract_from_file(file_path, True)
+                except Exception as e:
+                    log.error(f"Error processing file {filename}: {e}")
+                    print("Error processing file", filename, e)
+                    continue
 
                 result = file_db.add(file_id=file_id, abstract=abstract, full_text=full_text)
                 if result != False:

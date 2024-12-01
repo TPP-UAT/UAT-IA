@@ -6,6 +6,7 @@ from TermTrainer import TermTrainer
 from InputCreators.NormalInputCreator import NormalInputCreator
 from InputCreators.AbstractInputCreator import AbstractInputCreator
 from InputCreators.TFIDFInputCreator import TFIDFInputCreator
+from InputCreators.SummarizeInputCreator import SummarizeInputCreator
 
 class Trainer:
     def __init__(self, thesaurus, database):
@@ -13,8 +14,9 @@ class Trainer:
         self.database = database
         self.input_creators = [
             # NormalInputCreator(), 
-            # TFIDFInputCreator(), 
-            AbstractInputCreator(database)
+            # TFIDFInputCreator(database), 
+            # AbstractInputCreator(database)
+            SummarizeInputCreator(database)
         ]
 
     # Entrypoint method
