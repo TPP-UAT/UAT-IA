@@ -54,21 +54,21 @@ if __name__ == '__main__':
         elif (mode == "regenerate"):
             all_files = database.get_all_files()
             summarizeInputCreator = SummarizeInputCreator(database)
-        for file in all_files:
-            file_id = file["file_id"]
-            full_text = file["full_text"]
+            for file in all_files:
+                file_id = file["file_id"]
+                full_text = file["full_text"]
 
-            if not full_text:  # Ignorar archivos sin texto
-                print(f"No full_text found for file_id {file_id}")
-                continue
+                if not full_text:  # Ignorar archivos sin texto
+                    print(f"No full_text found for file_id {file_id}")
+                    continue
 
-            # Generar resumen
-            try:
-                summary = summarizeInputCreator.summarize_text(full_text)
-                # Actualizar el resumen en la base de datos
-                database.update_file_summary(file_id, summary)
-            except Exception as e:
-                print(f"Error processing file_id {file_id}: {e}")
+                # Generar resumen
+                try:
+                    summary = summarizeInputCreator.summarize_text(full_text, 0.25, max_sentences=100, additional_stopwords={"specific", "unnecessary", "technical"})
+                    # Actualizar el resumen en la base de datos
+                    database.update_file_summary(file_id, summary)
+                except Exception as e:
+                    print(f"Error processing file_id {file_id}: {e}")
         else:
             print("Invalid mode")
         
