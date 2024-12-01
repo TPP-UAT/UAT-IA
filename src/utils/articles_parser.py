@@ -54,13 +54,12 @@ def get_text_from_page(page, remove_abstract):
                         bold_text.append(text)
     
     # Guarda los spans en un archivo
-    objects_string = json.dumps(page_spans, indent=2)
+    # objects_string = json.dumps(page_spans, indent=2)
     # save_string_to_file(objects_string, 'spans1.txt')
 
     keywords = get_keywords_from_text(page_spans)
 
     # First filter using the full span element (more properties)
-    # comentar esto para ver diferencias
     page_spans = clean_spans_from_page(page_spans, remove_abstract)
     # objects_string2 = json.dumps(page_spans, indent=2)
     # save_string_to_file(objects_string2, 'spans2.txt')

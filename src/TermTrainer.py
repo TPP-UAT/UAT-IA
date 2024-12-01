@@ -102,11 +102,10 @@ class TermTrainer:
                     file_categories = { child: 0 for child in children }
                     text_input = training_input_creator.get_file_data_input(file_path)
                     training_files_input[file_path] = FileInputData(file_categories, text_input)
-                    if (file_count % 10 == 0):
+                    if (file_count % 50 == 0):
                         print("--------------------------------------------------", flush=True)
-                        print(f"File path for the {file_count} file: {file_path}", flush=True)
-                        print(f"Text input for the {file_count} file: {text_input}", flush=True)
-                        print(f"Categories for the {file_count} file: {file_categories}", flush=True)
+                        print(f"Training file {file_count}", flush=True)
+                        self.log.info(f"Training file {file_count}")
                     file_count += 1
                 
                 # Set the child as category with 1 insted of 0
