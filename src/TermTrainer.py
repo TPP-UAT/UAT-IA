@@ -95,18 +95,12 @@ class TermTrainer:
 
             files_paths = keyword_table_db.get_file_ids_by_keyword_ids(term_children_ids)
             self.log.info(f"Child: {child} has {len(term_children_ids)} children and {len(files_paths)} files")
-            file_count = 0
             for file_path in files_paths:
                 # If the file_path is not in files_input dictionary, creates a new item with the path as the key and an input array filled with 0s
                 if file_path not in training_files_input:
                     file_categories = { child: 0 for child in children }
                     text_input = training_input_creator.get_file_data_input(file_path)
                     training_files_input[file_path] = FileInputData(file_categories, text_input)
-                    if (file_count % 50 == 0):
-                        print("--------------------------------------------------", flush=True)
-                        print(f"Training file {file_count}", flush=True)
-                        self.log.info(f"Training file {file_count}")
-                    file_count += 1
                 
                 # Set the child as category with 1 insted of 0
                 training_files_input[file_path].set_category(child)

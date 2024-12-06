@@ -122,8 +122,7 @@ class SummarizeInputCreator:
 
     def get_file_data_input(self, file_id):
         try:
-            full_text = self.file_db.get_full_text_by_file_id(file_id)
-            summarized_text = self.summarize_text(full_text)
+            summarized_text = self.file_db.get_summarized_text_by_file_id(file_id)
             return summarized_text
         except:
             print("Error trying to load file with path: ", file_id)

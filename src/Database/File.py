@@ -22,6 +22,12 @@ class File():
         query = select(FileModel.full_text).where(FileModel.file_id == file_id)
         result = self.database.query(query).first()
         return result[0]
+    
+    def get_summarized_text_by_file_id(self, file_id):
+        """Get a file summarized_text by its file_id."""
+        query = select(FileModel.summarized_text).where(FileModel.file_id == file_id)
+        result = self.database.query(query).first()
+        return result[0]
 
     def get_all(self): 
         files = []
