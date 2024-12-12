@@ -87,14 +87,6 @@ class Thesaurus:
                     previous[child_id] = current_id
                     heapq.heappush(heap, (new_distance, child_id))
 
-            # Update the distances to the parents
-            for parent_id in term.parents:
-                new_distance = current_distance + 1  # Peso de 1 para todas las conexiones
-                if new_distance < distances[parent_id]:
-                    distances[parent_id] = new_distance
-                    previous[parent_id] = current_id
-                    heapq.heappush(heap, (new_distance, parent_id))
-
         # Reconstruct the path
         path = []
         current_id = end_id
