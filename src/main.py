@@ -64,8 +64,8 @@ if __name__ == '__main__':
 
                 # Generar resumen
                 try:
-                    summary = summarizeInputCreator.summarize_text(full_text, 0.25, max_sentences=100, additional_stopwords={"specific", "unnecessary", "technical"})
-                    # Actualizar el resumen en la base de datos
+                    summary = summarizeInputCreator.summarize_text(full_text)
+                    # Update the summary in the database
                     database.update_file_summary(file_id, summary)
                 except Exception as e:
                     print(f"Error processing file_id {file_id}: {e}")
