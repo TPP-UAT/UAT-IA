@@ -46,14 +46,14 @@ class SummarizeInputCreator:
                 
         return '.'.join(cleaned_sentences)
 
-    def summarize_text(self, text, min_chars=5000, max_chars=7000, additional_stopwords=None):
+    def summarize_text(self, text, min_chars=7000, max_chars=10000, additional_stopwords=None):
         """
         Summarizes a scientific article with improved coherence and generalization.
 
         Parameters:
         - text (str): The text to summarize
-        - min_chars (int): Minimum character length for the summary (default: 4000)
-        - max_chars (int): Maximum character length for the summary (default: 6000)
+        - min_chars (int): Minimum character length for the summary (default: 6000)
+        - max_chars (int): Maximum character length for the summary (default: 9000)
         - additional_stopwords (set): Custom stopwords to exclude from frequency calculation (optional)
 
         Returns:
