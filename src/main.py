@@ -7,6 +7,11 @@ from dotenv import load_dotenv
 from UATMapper import UATMapper
 from Database.Database import Database
 from utils.pdfs_terms_parser import upload_data 
+import logging
+
+# Logging, change log level if needed
+logging.basicConfig(filename='logs/file_regeneration.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+log = logging.getLogger('my_logger')
 
 if __name__ == '__main__':
     gc.set_debug(gc.DEBUG_SAVEALL)
@@ -52,21 +57,28 @@ if __name__ == '__main__':
                 process.wait()  # Ensure the process completes before starting the next
                 gc.collect()  # Explicitly collect garbage after each process
         elif (mode == "regenerate"):
+            count = 0
             all_files = database.get_all_files()
             summarizeInputCreator = SummarizeInputCreator(database)
+
             for file in all_files:
                 file_id = file["file_id"]
                 full_text = file["full_text"]
 
-                if not full_text:  # Ignorar archivos sin texto
+                if (count % 50 == 0):
+                    log.info(f"Summarizing file {count} of {len(all_files)}")
+
+                if not full_text:  # Ignore files without full_text 
                     print(f"No full_text found for file_id {file_id}")
                     continue
 
-                # Generar resumen
+                # Generate the summary
                 try:
                     summary = summarizeInputCreator.summarize_text(full_text)
+                    # print(f"Summary for file_id {file_id}: {summary}")
                     # Update the summary in the database
                     database.update_file_summary(file_id, summary)
+                    count += 1
                 except Exception as e:
                     print(f"Error processing file_id {file_id}: {e}")
         else:
