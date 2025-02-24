@@ -2,6 +2,7 @@ import os
 import spacy
 import random
 import logging
+import optuna
 from spacy.util import load_config, load_model_from_config
 from sklearn.model_selection import train_test_split
 from spacy.training import Example
@@ -45,28 +46,37 @@ class TermTrainer:
         training_data = self.prepare_training_data(children, input_creator)
 
         if training_data:
-            first_file_path = next(iter(training_data))  # Obtener la primera clave del diccionario
-            first_file_data = training_data[first_file_path]  # Obtener el valor correspondiente
+            first_file_path = next(iter(training_data))  # Get the first key in the dictionary
+            first_file_data = training_data[first_file_path]  # Get the data for the first file
             print(f"Text input for the first file: {first_file_data.get_text_input()}", flush=True)
 
         # Split data into train and test sets
         train_data, test_data = self.split_data(training_data)
 
-        # Train the model with the training data
-        self.train(train_data, children)
-        print("Model trained", flush=True)
-        # Evaluate the model using the test set
-        accuracy = self.test_model(test_data)
-        print(f"Model accuracy: {accuracy}")
-        self.log.info(f"Model accuracy: {accuracy}")
+        self.log.info(f"Training data size: {len(train_data)}")
+        self.log.info(f"Test data size: {len(test_data)}")
+
+        # Run Optuna to find best hyperparameters
+        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.MedianPruner())
+        study.optimize(lambda trial: self.objective(trial, train_data, test_data, children), n_trials=6)  # Reduced trials
+
+        # Retrieve best hyperparameters
+        best_params = study.best_params
+        self.log.info(f"Best hyperparameters for term {term_id}: {best_params}")
+
+        # Train final model with optimized hyperparameters
+        self.final_train(train_data, children, best_params)
+
+        # Evaluate the final model
+        test_examples = [
+            Example.from_dict(self.nlp.make_doc(file_input_data.get_text_input()), {"cats": file_input_data.get_categories()})
+            for file_input_data in test_data.values()
+        ]
+        accuracy = self.evaluate_model(test_examples, True)
+        self.log.info(f"Final model accuracy for term {term_id}: {accuracy}")
 
         # Saved trained model
         self.save_trained_model(term_id, input_creator.get_folder_name())
-
-        # Chequear como hacer si el modelo no tiene ninguna categoria con "1"
-        # if len(keywords_by_text):
-        #     self.generate_model_for_group_of_terms(texts, keywords_by_text, term_id, training_input_creator)
-        #     self.models_created += 1
     
     def split_data(self, training_data):
         """
@@ -107,48 +117,90 @@ class TermTrainer:
 
         return training_files_input
 
-    def test_model(self, test_data):
+    def objective(self, trial, train_data, test_data, categories):
         """
-        Evaluates the model on the test set and returns the accuracy.
+        Objective function for Optuna hyperparameter tuning.
         """
-        examples = []
-        for _, file_input_data in test_data.items():
-            text_input = file_input_data.get_text_input()
-            categories = file_input_data.get_categories()
-            doc = self.nlp.make_doc(text_input)
-            example = Example.from_dict(doc, {"cats": categories})
-            examples.append(example)
+        print(f"***** Running trial: {trial.number} *****")
 
-        scorer = self.nlp.evaluate(examples)
+        learn_rate = trial.suggest_float("learn_rate", 1e-5, 1e-3)
+        batch_size = trial.suggest_categorical("batch_size", [4, 8, 16, 32])
+        dropout = trial.suggest_float("dropout", 0.1, 0.5)
+        epochs = trial.suggest_int("epochs", 5, 20)
+        ngram_size = trial.suggest_int("ngram_size", 1, 3)
 
-        for key, value in scorer.items():
-            print(f"{key}: {value}")
-            self.log.info(f"{key}: {value}")
-
-        return scorer["cats_score"]  # Return the accuracy of the model
-
-    def train(self, train_data, categories):
-        """
-        Fine-tunes the existing spaCy model by updating it with new training data.
-
-        :param examples: List of Example objects containing the training data (text and annotations)
-        :param model_output: Path where the fine-tuned model will be saved
-        """
-        # Get or add the 'textcat_multilabel' component for multilabel text classification
         if "textcat_multilabel" not in self.nlp.pipe_names:
             textcat = self.nlp.add_pipe("textcat_multilabel", last=True)
         else:
             textcat = self.nlp.get_pipe("textcat_multilabel")
 
-        # Add new labels to the 'textcat_multilabel' component based on the examples
+        # Adjust the quantity of embedding layers
+        textcat.cfg["ngram_size"] = ngram_size
+
         for category in categories:
-            print("Adding category: ", category, flush=True)
             if category not in textcat.labels:
                 textcat.add_label(category)
 
         optimizer = self.nlp.initialize()
 
-        print("PIPELINE: ", self.nlp.pipe_names)
+        if hasattr(optimizer, "param_groups"):
+            for param_group in optimizer.param_groups:
+                param_group["lr"] = learn_rate
+
+        doc_bin = DocBin(store_user_data=True)
+        texts = [file_input_data.get_text_input() for _, file_input_data in train_data.items()]
+        categories_list = [file_input_data.get_categories() for _, file_input_data in train_data.items()]
+        examples = []
+
+        for doc, categories in zip(self.nlp.pipe(texts), categories_list):
+            doc.cats = categories
+            example = Example.from_dict(doc, {"cats": categories})   # Save ground truth categories for evaluation
+            examples.append(example)
+            doc_bin.add(doc)
+
+        for epoch in range(epochs):  # Train only 5 epochs per trial
+            print("Starting epoch: ", epoch + 1, flush=True)
+            losses = {}
+            docs = list(doc_bin.get_docs(self.nlp.vocab))
+            random.shuffle(docs)
+
+            for batch_start in range(0, len(docs), batch_size):
+                batch_docs = docs[batch_start:batch_start + batch_size]
+                examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
+
+                self.nlp.update(examples, sgd=optimizer, losses=losses, drop=dropout)
+
+            # Create test examples for evaluation only using 50% of the data
+            test_size = max(1, int(len(test_data) * 0.5))
+            test_samples = random.sample(list(test_data.values()), test_size)
+
+            test_texts = [file_input_data.get_text_input() for file_input_data in test_samples]
+            test_examples = [
+                Example.from_dict(self.nlp.make_doc(text), {"cats": sample.get_categories()})
+                for text, sample in zip(test_texts, test_samples)
+            ]
+
+            # Evaluate the model
+            accuracy = self.evaluate_model(test_examples, False)
+            trial.report(accuracy, epoch)
+
+            # Pruning: Stop bad trials early
+            if trial.should_prune():
+                raise optuna.exceptions.TrialPruned()
+
+        return accuracy
+
+    def final_train(self, train_data, categories, best_params):
+        """
+        Train the final model using the best hyperparameters found by Optuna.
+        """
+        batch_size = best_params["batch_size"]
+        dropout = best_params["dropout"]
+
+        optimizer = self.nlp.initialize()
+        if hasattr(optimizer, "param_groups"):
+            for param_group in optimizer.param_groups:
+                param_group["lr"] = best_params["learn_rate"]
 
         doc_bin = DocBin(store_user_data=True)
         texts = [file_input_data.get_text_input() for _, file_input_data in train_data.items()]
@@ -161,31 +213,86 @@ class TermTrainer:
 
         print(f"Total documents: {len(doc_bin)}", flush=True)
         print(f"---------------------------", flush=True)
-    
-        # Train the model for a specified number of epochs
-        # optimizer = self.nlp.resume_training() # Inicializa correctamente el optimizador
-        batch_size = 128
-        for i in range(30):  # Adjust necessary epochs
-            try: 
-                print("Starting epoch: ", i + 1, flush=True)
+
+        for epoch in range(20):  # Full training for best hyperparameters
+            try:
+                print("Starting epoch: ", epoch + 1, flush=True)
                 losses = {}
-        
                 docs = list(doc_bin.get_docs(self.nlp.vocab))
                 random.shuffle(docs)
-                
+
                 for batch_start in range(0, len(docs), batch_size):
                     batch_docs = docs[batch_start:batch_start + batch_size]
                     examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
-                    
-                    try:
-                        self.nlp.update(examples, sgd=optimizer, losses=losses)
-                    except Exception as e:
-                        print("Error en la actualización:", e, flush=True)
-                
-                print(f"Epoch {i + 1} - Losses: {losses}", flush=True)
+                    self.nlp.update(examples, sgd=optimizer, losses=losses, drop=dropout)
             except Exception as e:
                 print("Error: ", e, flush=True)
                 continue
+
+    def evaluate_model(self, examples, show_logs=False):
+        """
+        Evaluates the trained model on new predictions and returns the accuracy.
+        """
+        if (show_logs):
+            self.log.info("Evaluating model...")
+
+        correct = 0
+        total = 0
+
+        if isinstance(examples[0], str):
+            raise ValueError("`evaluate_model()` received raw text instead of `Example` objects!")
+
+        texts = [example.text if isinstance(example, Example) else example for example in examples]
+        predicted_docs = list(self.nlp.pipe(texts))  # Process in batch
+
+        if (show_logs):
+            self.log.info(f"Total predicted docs: {len(predicted_docs)}")
+        print("Total predicted docs: ", len(predicted_docs), flush=True)
+
+        for doc, example in zip(predicted_docs, examples):
+            pred_label = max(doc.cats, key=doc.cats.get)  # Predicted label
+            gold_label = max(example.reference.cats, key=example.reference.cats.get)  # Ground truth
+
+            if pred_label == gold_label:
+                correct += 1
+            total += 1
+
+        accuracy = correct / total if total > 0 else 0  # Return accuracy
+        if (show_logs):
+            self.log.info(f"new method Accuracy: {accuracy}")
+
+        print("new method Accuracy: ", accuracy, flush=True)
+
+        return accuracy
+        """
+        Evaluates the model on the test set and returns the accuracy.
+        """
+        if (show_logs):
+            self.log.info("Old method Evaluating model...")
+
+        examples = []
+        for _, file_input_data in test_data.items():
+            text_input = file_input_data.get_text_input()
+            categories = file_input_data.get_categories()
+            doc = self.nlp.make_doc(text_input)
+            example = Example.from_dict(doc, {"cats": categories})
+            examples.append(example)
+
+        if (show_logs):
+            self.log.info(f"Total test examples: {len(examples)}")
+        print("Total test examples: ", len(examples), flush=True)
+
+        scorer = self.nlp.evaluate(examples)
+
+        for key, value in scorer.items():
+            print(f"{key}: {value}")
+            self.log.info(f"{key}: {value}")
+
+        accuracy = scorer["cats_score"]
+        print(f"old method Accuracy: {accuracy}")
+        self.log.info(f"old method Accuracy: {accuracy}")
+
+        return accuracy
 
     def save_trained_model(self, term_id, folder_name):
         # Create folder if it doesn't exist

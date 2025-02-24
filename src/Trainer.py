@@ -15,8 +15,8 @@ class Trainer:
         self.input_creators = [
             # NormalInputCreator(), 
             # TFIDFInputCreator(database), 
-            # AbstractInputCreator(database)
-            SummarizeInputCreator(database)
+            AbstractInputCreator(database)
+            # SummarizeInputCreator(database)
         ]
 
     # Entrypoint method
