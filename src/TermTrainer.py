@@ -3,6 +3,7 @@ import spacy
 import random
 import logging
 import optuna
+import math
 from spacy.util import load_config, load_model_from_config
 from sklearn.model_selection import train_test_split
 from spacy.training import Example
@@ -50,6 +51,11 @@ class TermTrainer:
             first_file_data = training_data[first_file_path]  # Get the data for the first file
             print(f"Text input for the first file: {first_file_data.get_text_input()}", flush=True)
 
+        # If training_data is less than 10, it's not worth training the model
+        if len(training_data) < 10:
+            self.log.info(f"Training data for term {term_id} has less than 10 files. Skipping training.")
+            return
+
         # Split data into train and test sets
         train_data, test_data = self.split_data(training_data)
 
@@ -57,12 +63,13 @@ class TermTrainer:
         self.log.info(f"Test data size: {len(test_data)}")
 
         # Run Optuna to find best hyperparameters
-        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.MedianPruner())
-        study.optimize(lambda trial: self.objective(trial, train_data, test_data, children), n_trials=6)  # Reduced trials
+        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.HyperbandPruner(min_resource=3, max_resource=20, reduction_factor=2))
+        study.optimize(lambda trial: self.objective(trial, train_data, test_data, children), n_trials=20)
 
         # Retrieve best hyperparameters
         best_params = study.best_params
-        self.log.info(f"Best hyperparameters for term {term_id}: {best_params}")
+        best_trial = study.best_trial
+        self.log.info(f"Best hyperparameters for term {term_id} with accuracy {best_trial.value}: {best_params}")
 
         # Train final model with optimized hyperparameters
         self.final_train(train_data, children, best_params)
@@ -72,8 +79,8 @@ class TermTrainer:
             Example.from_dict(self.nlp.make_doc(file_input_data.get_text_input()), {"cats": file_input_data.get_categories()})
             for file_input_data in test_data.values()
         ]
-        accuracy = self.evaluate_model(test_examples, True)
-        self.log.info(f"Final model accuracy for term {term_id}: {accuracy}")
+        accuracy, loss = self.evaluate_model(test_examples, True)
+        self.log.info(f"Final Model - Accuracy: {accuracy}, Loss: {loss}")
 
         # Saved trained model
         self.save_trained_model(term_id, input_creator.get_folder_name())
@@ -118,16 +125,13 @@ class TermTrainer:
         return training_files_input
 
     def objective(self, trial, train_data, test_data, categories):
-        """
-        Objective function for Optuna hyperparameter tuning.
-        """
         print(f"***** Running trial: {trial.number} *****")
 
-        learn_rate = trial.suggest_float("learn_rate", 1e-5, 1e-3)
-        batch_size = trial.suggest_categorical("batch_size", [4, 8, 16, 32])
-        dropout = trial.suggest_float("dropout", 0.1, 0.5)
-        epochs = trial.suggest_int("epochs", 5, 20)
-        ngram_size = trial.suggest_int("ngram_size", 1, 3)
+        learn_rate = trial.suggest_float("learn_rate", 1e-5, 5e-4, log=True)
+        batch_size = trial.suggest_categorical("batch_size", [16, 32, 64])
+        dropout = trial.suggest_float("dropout", 0.2, 0.5, step=0.05)
+        epochs = trial.suggest_categorical("epochs", [10, 15, 20])
+        ngram_size = trial.suggest_int("ngram_size", 2, 6)
 
         if "textcat_multilabel" not in self.nlp.pipe_names:
             textcat = self.nlp.add_pipe("textcat_multilabel", last=True)
@@ -154,12 +158,12 @@ class TermTrainer:
 
         for doc, categories in zip(self.nlp.pipe(texts), categories_list):
             doc.cats = categories
-            example = Example.from_dict(doc, {"cats": categories})   # Save ground truth categories for evaluation
+            example = Example.from_dict(doc, {"cats": categories})  
             examples.append(example)
             doc_bin.add(doc)
 
-        for epoch in range(epochs):  # Train only 5 epochs per trial
-            print("Starting epoch: ", epoch + 1, flush=True)
+        for epoch in range(epochs):  
+            print(f"Starting epoch {epoch + 1}", flush=True)
             losses = {}
             docs = list(doc_bin.get_docs(self.nlp.vocab))
             random.shuffle(docs)
@@ -168,11 +172,11 @@ class TermTrainer:
                 batch_docs = docs[batch_start:batch_start + batch_size]
                 examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
 
+                # Perform training step
                 self.nlp.update(examples, sgd=optimizer, losses=losses, drop=dropout)
 
-            # Create test examples for evaluation only using 50% of the data
-            test_size = max(1, int(len(test_data) * 0.5))
-            test_samples = random.sample(list(test_data.values()), test_size)
+            # Evaluate the model
+            test_samples = random.sample(list(test_data.values()), len(test_data))
 
             test_texts = [file_input_data.get_text_input() for file_input_data in test_samples]
             test_examples = [
@@ -180,13 +184,22 @@ class TermTrainer:
                 for text, sample in zip(test_texts, test_samples)
             ]
 
-            # Evaluate the model
-            accuracy = self.evaluate_model(test_examples, False)
+            accuracy, _loss = self.evaluate_model(test_examples, False)
+
+            # Log accuracy
+            self.log.info(f"Trial {trial.number} - Epoch {epoch + 1}: Accuracy {accuracy} - Loss {losses}")
+
+            # Report accuracy to Optuna for pruning decisions
             trial.report(accuracy, epoch)
 
-            # Pruning: Stop bad trials early
             if trial.should_prune():
+                self.log.info(f"Trial {trial.number} pruned at epoch {epoch + 1}")
                 raise optuna.exceptions.TrialPruned()
+            
+        # Log final result of trial
+        self.log.info(
+            f"Trial {trial.number} finished with value: {accuracy} and parameters: {trial.params}. "
+        )
 
         return accuracy
 
@@ -195,12 +208,17 @@ class TermTrainer:
         Train the final model using the best hyperparameters found by Optuna.
         """
         batch_size = best_params["batch_size"]
-        dropout = best_params["dropout"]
+        dropout = min(0.3, best_params["dropout"])
+        epochs = best_params["epochs"]
+        learn_rate = best_params["learn_rate"]
+
+        print(f"Final training with best hyperparameters: {batch_size} - {dropout} - {epochs} - {learn_rate}", flush=True)
 
         optimizer = self.nlp.initialize()
-        if hasattr(optimizer, "param_groups"):
-            for param_group in optimizer.param_groups:
-                param_group["lr"] = best_params["learn_rate"]
+        if learn_rate:
+            optimizer.learn_rate = learn_rate
+
+        print(f"Optimizer Learning Rate: {optimizer.learn_rate}")
 
         doc_bin = DocBin(store_user_data=True)
         texts = [file_input_data.get_text_input() for _, file_input_data in train_data.items()]
@@ -214,7 +232,7 @@ class TermTrainer:
         print(f"Total documents: {len(doc_bin)}", flush=True)
         print(f"---------------------------", flush=True)
 
-        for epoch in range(20):  # Full training for best hyperparameters
+        for epoch in range(epochs):  # Full training for best hyperparameters
             try:
                 print("Starting epoch: ", epoch + 1, flush=True)
                 losses = {}
@@ -238,6 +256,7 @@ class TermTrainer:
 
         correct = 0
         total = 0
+        total_loss = 0.0
 
         if isinstance(examples[0], str):
             raise ValueError("`evaluate_model()` received raw text instead of `Example` objects!")
@@ -253,46 +272,22 @@ class TermTrainer:
             pred_label = max(doc.cats, key=doc.cats.get)  # Predicted label
             gold_label = max(example.reference.cats, key=example.reference.cats.get)  # Ground truth
 
+            # Calculate loss (categorical cross-entropy)
+            gold_probs = example.reference.cats
+            predicted_probs = doc.cats
+            loss = sum(gold_probs[label] * -math.log(predicted_probs[label] if predicted_probs[label] > 0 else 1e-9)
+                for label in gold_probs)
+
+            total_loss += loss
+
             if pred_label == gold_label:
                 correct += 1
             total += 1
 
-        accuracy = correct / total if total > 0 else 0  # Return accuracy
-        if (show_logs):
-            self.log.info(f"new method Accuracy: {accuracy}")
+        accuracy = correct / total if total > 0 else 0
+        avg_loss = total_loss / total if total > 0 else 0
 
-        print("new method Accuracy: ", accuracy, flush=True)
-
-        return accuracy
-        """
-        Evaluates the model on the test set and returns the accuracy.
-        """
-        if (show_logs):
-            self.log.info("Old method Evaluating model...")
-
-        examples = []
-        for _, file_input_data in test_data.items():
-            text_input = file_input_data.get_text_input()
-            categories = file_input_data.get_categories()
-            doc = self.nlp.make_doc(text_input)
-            example = Example.from_dict(doc, {"cats": categories})
-            examples.append(example)
-
-        if (show_logs):
-            self.log.info(f"Total test examples: {len(examples)}")
-        print("Total test examples: ", len(examples), flush=True)
-
-        scorer = self.nlp.evaluate(examples)
-
-        for key, value in scorer.items():
-            print(f"{key}: {value}")
-            self.log.info(f"{key}: {value}")
-
-        accuracy = scorer["cats_score"]
-        print(f"old method Accuracy: {accuracy}")
-        self.log.info(f"old method Accuracy: {accuracy}")
-
-        return accuracy
+        return accuracy, avg_loss
 
     def save_trained_model(self, term_id, folder_name):
         # Create folder if it doesn't exist
