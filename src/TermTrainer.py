@@ -80,7 +80,7 @@ class TermTrainer:
             for file_input_data in test_data.values()
         ]
         accuracy, loss = self.evaluate_model(test_examples, True)
-        self.log.info(f"Final Model - Accuracy: {accuracy}, Loss: {loss}")
+        self.log.info(f"Final model for Term ID {term_id} - Accuracy: {accuracy}, Loss: {loss}")
 
         # Saved trained model
         self.save_trained_model(term_id, input_creator.get_folder_name())
