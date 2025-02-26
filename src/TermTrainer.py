@@ -76,27 +76,28 @@ class TermTrainer:
         self.log.info(f"Training data size: {len(train_data)} - Validation data size: {len(validation_data)} - Test data size: {len(test_data)}")
 
         # Run Optuna to find best hyperparameters
-        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.HyperbandPruner(min_resource=3, max_resource=20, reduction_factor=2))
-        study.optimize(lambda trial: self.objective(trial, train_data, fixed_validation_examples, children), n_trials=25)
+        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.HyperbandPruner(min_resource=5, max_resource=25, reduction_factor=3))
+        study.optimize(lambda trial: self.objective(trial, train_data, fixed_validation_examples, children), n_trials=3)
 
         # Retrieve best hyperparameters
         best_params = study.best_params
         best_trial = study.best_trial
         self.log.info(f"Best hyperparameters for term {term_id} with accuracy {best_trial.value}: {best_params}")
 
-        # Combine train and validation data for final training
-        final_train_data = {**train_data, **validation_data}
-
-        # Train final model with optimized hyperparameters
-        final_model = self.final_train(final_train_data, children, best_params)
-
         # Evaluate the final model with test data
         test_examples = [
-            Example.from_dict(final_model.make_doc(file_input_data.get_text_input()), 
+            Example.from_dict(self.create_fresh_model().make_doc(file_input_data.get_text_input()), 
                 {"cats": file_input_data.get_categories()}
             )
             for file_input_data in test_data.values()
         ]
+
+        # Combine train and validation data for final training
+        final_train_data = {**train_data, **validation_data}
+
+        # Train final model with optimized hyperparameters
+        final_model = self.final_train(final_train_data, test_examples, children, best_params)
+
         accuracy, loss = self.evaluate_model(test_examples, final_model)
         self.log.info(f"Final model for Term ID {term_id} - Accuracy: {accuracy}, Loss: {loss}")
 
@@ -154,15 +155,12 @@ class TermTrainer:
         batch_size = trial.suggest_categorical("batch_size", [8, 16, 32])
         dropout = trial.suggest_float("dropout", 0.2, 0.5)
         epochs = trial.suggest_int("epochs", 10, 20)
-        ngram_size = trial.suggest_int("ngram_size", 1, 4)
+        weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True)
 
         if "textcat_multilabel" not in nlp.pipe_names:
             textcat = nlp.add_pipe("textcat_multilabel", last=True)
         else:
             textcat = nlp.get_pipe("textcat_multilabel")
-
-        # Adjust the quantity of embedding layers
-        textcat.cfg["ngram_size"] = ngram_size
 
         for category in categories:
             if category not in textcat.labels:
@@ -171,8 +169,10 @@ class TermTrainer:
         optimizer = nlp.initialize()
 
         if hasattr(optimizer, "param_groups"):
+            print("ENTRA ACA")
             for param_group in optimizer.param_groups:
                 param_group["lr"] = learn_rate
+                param_group['weight_decay'] = weight_decay
 
         doc_bin = DocBin(store_user_data=True)
         texts = [file_input_data.get_text_input() for _, file_input_data in train_data.items()]
@@ -217,7 +217,7 @@ class TermTrainer:
 
         return accuracy
 
-    def final_train(self, train_data, categories, best_params):
+    def final_train(self, train_data, test_examples, categories, best_params):
         """
         Train the final model using the best hyperparameters found by Optuna.
         """       
@@ -234,23 +234,27 @@ class TermTrainer:
         for category in categories:
             if category not in textcat.labels:
                 textcat.add_label(category)
-        textcat.cfg["ngram_size"] = best_params["ngram_size"]   
 
         batch_size = best_params["batch_size"]
         dropout = best_params["dropout"]
         epochs = best_params["epochs"]
         learn_rate = best_params["learn_rate"]
+        weight_decay = best_params["weight_decay"]
 
         print(f"Final training with best hyperparameters: {batch_size} - {dropout} - {epochs} - {learn_rate}", flush=True)
 
         optimizer = nlp.initialize()
 
         # Set the learning rate for the optimizer
-        if hasattr(optimizer, "learn_rate"):
-            optimizer.learn_rate = learn_rate
-        elif hasattr(optimizer, "param_groups"):
+
+        if hasattr(optimizer, "param_groups"):
             for param_group in optimizer.param_groups:
                 param_group["lr"] = learn_rate
+                param_group['weight_decay'] = weight_decay
+        elif hasattr(optimizer, "learn_rate"):
+            optimizer.learn_rate = learn_rate
+        elif hasattr(optimizer, "weight_decay"):
+            optimizer.weight_decay = weight_decay
 
         doc_bin = DocBin(store_user_data=True)
         texts = [data.get_text_input() for data in train_data.values()]
@@ -274,6 +278,9 @@ class TermTrainer:
                     batch_docs = docs[batch_start:batch_start + batch_size]
                     examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
                     nlp.update(examples, sgd=optimizer, losses=losses, drop=dropout)
+
+                    f1, loss = self.evaluate_model(test_examples, nlp)
+                    self.log.info(f"Epoch {epoch + 1} - Test F1: {f1}, Loss: {loss}")
             except Exception as e:
                 print("Error: ", e, flush=True)
                 continue
@@ -301,7 +308,7 @@ class TermTrainer:
             total_loss += loss
 
             # Apply threshold for multilabel predictions
-            threshold = 0.3
+            threshold = 0.5
             true_labels.append([trues[label] for label in sorted(trues)])
             pred_labels.append([int(preds.get(label, 0) >= threshold) 
                               for label in sorted(trues)])
