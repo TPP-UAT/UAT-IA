@@ -64,25 +64,14 @@ class TermTrainer:
         # Split data into train and test sets
         train_data, validation_data, test_data = self.split_data(training_data)
 
-        # Create fixed validation examples that will be used for both optimization and final evaluation
-        fixed_validation_examples = [
+        # Create validation examples that will be used for both optimization and final evaluation
+        validation_examples = [
             Example.from_dict(
                 self.create_fresh_model().make_doc(file_input_data.get_text_input()), 
                 {"cats": file_input_data.get_categories()}
             )
             for file_input_data in validation_data.values()
         ]
-
-        self.log.info(f"Training data size: {len(train_data)} - Validation data size: {len(validation_data)} - Test data size: {len(test_data)}")
-
-        # Run Optuna to find best hyperparameters
-        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.HyperbandPruner(min_resource=5, max_resource=25, reduction_factor=3))
-        study.optimize(lambda trial: self.objective(trial, train_data, fixed_validation_examples, children), n_trials=3)
-
-        # Retrieve best hyperparameters
-        best_params = study.best_params
-        best_trial = study.best_trial
-        self.log.info(f"Best hyperparameters for term {term_id} with accuracy {best_trial.value}: {best_params}")
 
         # Evaluate the final model with test data
         test_examples = [
@@ -92,11 +81,36 @@ class TermTrainer:
             for file_input_data in test_data.values()
         ]
 
+        self.log.info(f"Training data size: {len(train_data)} - Validation data size: {len(validation_data)} - Test data size: {len(test_data)}")
+
+        # Run Optuna to find best hyperparameters
+        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.HyperbandPruner(min_resource=5, max_resource=25, reduction_factor=3))
+        best_model_path = f"./temp_models/best_model_{term_id}"
+        best_accuracy = -float("inf")
+
+        def objective_wrapper(trial):
+            nonlocal best_accuracy
+            accuracy, model = self.objective(trial, train_data, validation_examples, test_examples, children)
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                if not os.path.exists('./temp_models'):
+                    os.makedirs('./temp_models')
+                model.to_disk(best_model_path)
+                self.log.info(f"Saved best model for term {term_id} with accuracy {accuracy} at trial {trial.number}")
+            return accuracy
+        
+        study.optimize(objective_wrapper, n_trials=20)
+
+        # Retrieve best hyperparameters
+        best_params = study.best_params
+        best_trial = study.best_trial
+        self.log.info(f"Best hyperparameters for term {term_id} with accuracy {best_trial.value}: {best_params}")
+
         # Combine train and validation data for final training
-        final_train_data = {**train_data, **validation_data}
+        # final_train_data = {**train_data, **validation_data}
 
         # Train final model with optimized hyperparameters
-        final_model = self.final_train(final_train_data, test_examples, children, best_params)
+        final_model = self.final_train(train_data, test_examples, children, best_params, term_id)
 
         accuracy, loss = self.evaluate_model(test_examples, final_model)
         self.log.info(f"Final model for Term ID {term_id} - Accuracy: {accuracy}, Loss: {loss}")
@@ -147,7 +161,7 @@ class TermTrainer:
 
         return training_files_input
 
-    def objective(self, trial, train_data, validation_examples, categories):
+    def objective(self, trial, train_data, validation_examples, test_examples, categories):
         print(f"***** Running trial: {trial.number} *****")
         nlp = self.create_fresh_model()
 
@@ -169,7 +183,6 @@ class TermTrainer:
         optimizer = nlp.initialize()
 
         if hasattr(optimizer, "param_groups"):
-            print("ENTRA ACA")
             for param_group in optimizer.param_groups:
                 param_group["lr"] = learn_rate
                 param_group['weight_decay'] = weight_decay
@@ -200,8 +213,11 @@ class TermTrainer:
 
             accuracy, _loss = self.evaluate_model(validation_examples, nlp)
 
+            # To compare the the accuracy on the test test
+            accuracy_test, _loss_test = self.evaluate_model(test_examples, nlp)
+
             # Log accuracy
-            self.log.info(f"Trial {trial.number} - Epoch {epoch + 1}: Accuracy {accuracy} - Loss {losses}")
+            self.log.info(f"Trial {trial.number} - Epoch {epoch + 1}: Accuracy {accuracy} - Loss {losses} - Test Accuracy {accuracy_test}")
 
             # Report accuracy to Optuna for pruning decisions
             trial.report(accuracy, epoch)
@@ -215,13 +231,19 @@ class TermTrainer:
             f"Trial {trial.number} finished with value: {accuracy} and parameters: {trial.params}. "
         )
 
-        return accuracy
+        return accuracy, nlp
 
-    def final_train(self, train_data, test_examples, categories, best_params):
+    def final_train(self, train_data, test_examples, categories, best_params, term_id):
         """
         Train the final model using the best hyperparameters found by Optuna.
         """       
-        nlp = self.create_fresh_model()
+        # Load the best model from the trial with the best hyperparameters
+        best_model_path = f"./temp_models/best_model_{term_id}"
+        if not os.path.exists(best_model_path):
+            raise FileNotFoundError(f"Best model not found at {best_model_path}")
+        
+        nlp = spacy.load(best_model_path)
+        self.log.info(f"Loaded best model from {best_model_path} for final training")
 
         # Retrieve the pipeline to set up the ngram size
         # Check for existing component before adding
@@ -243,22 +265,21 @@ class TermTrainer:
 
         print(f"Final training with best hyperparameters: {batch_size} - {dropout} - {epochs} - {learn_rate}", flush=True)
 
-        optimizer = nlp.initialize()
-
-        # Set the learning rate for the optimizer
-
-        if hasattr(optimizer, "param_groups"):
-            for param_group in optimizer.param_groups:
-                param_group["lr"] = learn_rate
-                param_group['weight_decay'] = weight_decay
-        elif hasattr(optimizer, "learn_rate"):
-            optimizer.learn_rate = learn_rate
-        elif hasattr(optimizer, "weight_decay"):
-            optimizer.weight_decay = weight_decay
+        optimizer = nlp.resume_training()
+        
+        # Debug optimizer
+        print(f"Optimizer type: {type(optimizer)}", flush=True)
+        print(f"Initial learn_rate: {optimizer.learn_rate}, Initial L2 (weight_decay): {optimizer.L2}", flush=True)
 
         doc_bin = DocBin(store_user_data=True)
         texts = [data.get_text_input() for data in train_data.values()]
         cats = [data.get_categories() for data in train_data.values()]
+
+        # Set hyperparameters directly on the Thinc optimizer
+        optimizer.learn_rate = learn_rate
+        optimizer.L2 = weight_decay 
+
+        print(f"Updated learn_rate: {optimizer.learn_rate}, Updated L2 (weight_decay): {optimizer.L2}", flush=True)
         
         for doc, cat in zip(nlp.pipe(texts), cats):
             doc.cats = cat
@@ -270,6 +291,18 @@ class TermTrainer:
         for epoch in range(epochs):
             try:
                 print("Starting epoch: ", epoch + 1, flush=True)
+
+                # Log all hyperparameters being used in this epoch
+                current_params = {
+                    "learn_rate": optimizer.learn_rate,
+                    "weight_decay": optimizer.L2,
+                    "batch_size": batch_size,
+                    "dropout": dropout,
+                    "epochs": epochs
+                }
+                print(f"Epoch {epoch + 1} - Current hyperparameters: {current_params}", flush=True)
+                print(f"Epoch {epoch + 1} - Best hyperparameters for comparison: {best_params}", flush=True)
+                
                 losses = {}
                 docs = list(doc_bin.get_docs(nlp.vocab))
                 random.shuffle(docs)
@@ -279,11 +312,17 @@ class TermTrainer:
                     examples = [Example.from_dict(doc, {"cats": doc.cats}) for doc in batch_docs]
                     nlp.update(examples, sgd=optimizer, losses=losses, drop=dropout)
 
-                    f1, loss = self.evaluate_model(test_examples, nlp)
-                    self.log.info(f"Epoch {epoch + 1} - Test F1: {f1}, Loss: {loss}")
+                # Evalute the model after each epoch
+                f1, loss = self.evaluate_model(test_examples, nlp)
+                self.log.info(f"Epoch {epoch + 1} - Test F1: {f1}, Loss: {loss}")
             except Exception as e:
                 print("Error: ", e, flush=True)
                 continue
+
+        # Clean up temporary models
+        if os.path.exists('./temp_models'):
+            import shutil
+            shutil.rmtree('./temp_models')
 
         return nlp
 
