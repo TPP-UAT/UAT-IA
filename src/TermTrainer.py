@@ -84,7 +84,7 @@ class TermTrainer:
         self.log.info(f"Training data size: {len(train_data)} - Validation data size: {len(validation_data)} - Test data size: {len(test_data)}")
 
         # Run Optuna to find best hyperparameters
-        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.HyperbandPruner(min_resource=5, max_resource=25, reduction_factor=3))
+        study = optuna.create_study(direction="maximize", pruner=optuna.pruners.HyperbandPruner(min_resource=7, max_resource=20, reduction_factor=3))
         best_model_path = f"./temp_models/best_model_{term_id}"
         best_accuracy = -float("inf")
 
@@ -99,7 +99,7 @@ class TermTrainer:
                 self.log.info(f"Saved best model for term {term_id} with accuracy {accuracy} at trial {trial.number}")
             return accuracy
         
-        study.optimize(objective_wrapper, n_trials=20)
+        study.optimize(objective_wrapper, n_trials=12)
 
         # Retrieve best hyperparameters
         best_params = study.best_params
