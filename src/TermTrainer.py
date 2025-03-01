@@ -81,7 +81,7 @@ class TermTrainer:
             for file_input_data in test_data.values()
         ]
 
-        self.log.info(f"Training data size: {len(train_data)} - Validation data size: {len(validation_data)} - Test data size: {len(test_data)}")
+        self.log.info(f"Training data for term ID {term_id} has size: {len(train_data)} - Validation data size: {len(validation_data)} - Test data size: {len(test_data)}")
 
         # Run Optuna to find best hyperparameters
         study = optuna.create_study(direction="maximize", pruner=optuna.pruners.HyperbandPruner(min_resource=7, max_resource=20, reduction_factor=3))
@@ -109,6 +109,7 @@ class TermTrainer:
         # Combine train and validation data for final training
         # final_train_data = {**train_data, **validation_data}
 
+        self.log.info(f"Training data for term ID {term_id} has size: {len(train_data)} - Test data size: {len(test_data)}")
         # Train final model with optimized hyperparameters
         final_model = self.final_train(train_data, test_examples, children, best_params, term_id)
 
