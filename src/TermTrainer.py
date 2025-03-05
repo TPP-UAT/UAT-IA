@@ -321,9 +321,9 @@ class TermTrainer:
                 continue
 
         # Clean up temporary models
-        if os.path.exists('./temp_models'):
+        if os.path.exists('./temp_models/best_model_{term_id}'):
             import shutil
-            shutil.rmtree('./temp_models')
+            shutil.rmtree('./temp_models/best_model_{term_id}')
 
         return nlp
 
