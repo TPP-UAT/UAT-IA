@@ -144,8 +144,12 @@ class TermTrainer:
 
         for child in children:
             # Get all children recursively from the child term (To associate all child files to the term child)
-            term_children = self.thesaurus.get_branch_children(child)
-            term_children_ids = [term.get_id() for term in term_children]
+            # term_children = self.thesaurus.get_branch_children(child)
+            # term_children_ids = [term.get_id() for term in term_children]
+            # term_children_ids.insert(0, child)
+
+            # Get only the child term (To associate only the child files)
+            term_children_ids = []
             term_children_ids.insert(0, child)
 
             files_paths = keyword_table_db.get_file_ids_by_keyword_ids(term_children_ids)
