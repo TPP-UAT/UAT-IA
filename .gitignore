@@ -13,6 +13,7 @@ uat_ia.egg-info
 *.sq
 *.txt
 models
+temp_models
 __pycache__
 
 !data/UAT-filtered.json

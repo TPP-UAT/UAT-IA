@@ -57,3 +57,4 @@ SQLAlchemy==2.0.32
 spacy==3.8.2
 transformers==4.33.2
 torch==2.3.1
+optuna
