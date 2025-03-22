@@ -48,7 +48,11 @@ class TermTrainer:
             first_file_path = next(iter(training_data))  # Obtener la primera clave del diccionario
             first_file_data = training_data[first_file_path]  # Obtener el valor correspondiente
             print(f"Text input for the first file: {first_file_data.get_text_input()}", flush=True)
-
+                # If training_data is less than 20, it's not worth training the model
+        if len(training_data) < 20:
+            self.log.info(f"Training data for term {term_id} has less than 20 files. Skipping training.")
+            return
+        
         # Split data into train and test sets
         train_data, test_data = self.split_data(training_data)
 
