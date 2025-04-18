@@ -40,16 +40,17 @@ if __name__ == '__main__':
             upload_data(pdf_directory, thesaurus, database)
         elif (mode == "train"):
             # Create a root term
-            root_term = thesaurus.get_by_id("1")
+            starting_term_id = "1476"
+            root_term = thesaurus.get_by_id(starting_term_id)
             # Iterate over all the children of the root term (We're missing the training for the root term)
-            # children = thesaurus.get_branch_children("1")
-            children = []
+            children = thesaurus.get_branch_children(starting_term_id)
+            # children = []
             children.insert(0, root_term)
 
             # Only for testing purposes
-            eleven_children = root_term.get_children()
-            for child_id in eleven_children:
-                children.append(thesaurus.get_by_id(child_id))
+            # eleven_children = root_term.get_children()
+            # for child_id in eleven_children:
+            #     children.append(thesaurus.get_by_id(child_id))
             print("CHILDREN: ", children)
         
             for child in children:
@@ -75,7 +76,7 @@ if __name__ == '__main__':
                 # Generate the summary
                 try:
                     summary = summarizeInputCreator.summarize_text(full_text)
-                    # print(f"Summary for file_id {file_id}: {summary}")
+                    print(f"Summary for file_id {file_id}: {summary}")
                     # Update the summary in the database
                     database.update_file_summary(file_id, summary)
                     count += 1
