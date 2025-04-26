@@ -10,6 +10,8 @@ class FileModel(Base):
     abstract = Column(Text)
     full_text = Column(Text)
     summarized_text = Column(Text)
+    title = Column(Text)
+    link = Column(Text)
     keywords = relationship("KeywordModel", back_populates="file")
 
 class KeywordModel(Base):

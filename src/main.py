@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
                 # Generate the summary
                 try:
-                    summary = summarizeInputCreator.summarize_text(full_text)
+                    summary = summarizeInputCreator.summarize_text(full_text, 0.25, max_sentences=100, additional_stopwords={"specific", "unnecessary", "technical"})
                     print(f"Summary for file_id {file_id}: {summary}")
                     # Update the summary in the database
                     database.update_file_summary(file_id, summary)
