@@ -41,9 +41,9 @@ class File():
 
         return files
 
-    def add(self, file_id, abstract, full_text):
+    def add(self, file_id, abstract, full_text, summarize, title, link):
         """Create a new file in the database."""
-        new_file = FileModel(file_id=file_id, abstract=abstract, full_text=full_text)
+        new_file = FileModel(file_id=file_id, abstract=abstract, full_text=full_text, summarized_text=summarize, title=title, link=link)
         try:
             result = self.database.add(new_file)
             return result

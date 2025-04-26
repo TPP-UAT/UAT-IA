@@ -37,7 +37,7 @@ def save_string_to_file(string, filename):
     print(f"Error saving string to file: {e}")
     
 # Retrieves the text from a page and returns it filtered by different criteria
-def get_text_from_page(page, remove_abstract):
+def get_text_from_page(page, remove_abstract, filename):
     blocks = page.get_text("dict")["blocks"]
 
     page_spans = []
@@ -52,12 +52,18 @@ def get_text_from_page(page, remove_abstract):
 
                     if "Bold" in font_name or ".B" in font_name or "Black" in font_name:
                         bold_text.append(text)
+                        
     
     # Guarda los spans en un archivo
     # objects_string = json.dumps(page_spans, indent=2)
     # save_string_to_file(objects_string, 'spans1.txt')
 
     keywords = get_keywords_from_text(page_spans)
+
+    link = ""
+    if (page.number == 0):
+        # Get the link from the first page
+        link = get_link_from_text(page_spans, filename)
 
     # First filter using the full span element (more properties)
     page_spans = clean_spans_from_page(page_spans, remove_abstract)
@@ -69,7 +75,7 @@ def get_text_from_page(page, remove_abstract):
     for span in page_spans:
         text += span["text"] + " "
 
-    return text, bold_text, keywords
+    return text, bold_text, keywords, link
 
 # Retrieve the title form an article
 def get_title_from_file(file_path):
@@ -151,6 +157,35 @@ def get_keywords_from_text(spans):
             i += 1
 
     return keywords
+
+def get_link_from_text(spans, file_id):
+    link = ""
+    i = 0
+
+    while i < len(spans):
+        start_index = None
+        end_index = None
+        # Find an element that matches a "concepts:"
+        for j in range(i, len(spans)):
+            if ("https:" in spans[j]['text']):
+                start_index = j
+                break
+
+        if start_index is not None:
+            for k in range(start_index, len(spans)):
+                if spans[k]["text"] == file_id:
+                    end_index = k
+                    break
+
+        # If both elements were found, remove the elements between them
+        if start_index is not None and end_index is not None:
+            for index in range(start_index, end_index + 1):
+                link += spans[index]["text"]
+            break
+        else:
+            i += 1
+
+    return link
 
 ''' Cleans the text by applying a series of text processing functions 
     Params: The plain text of the full article and an array of bold texts
@@ -730,19 +765,22 @@ def clean_parentesis_from_text(text):
     return text
 
 # Retrieve the full text from an article removing the unnecessary information
-def get_full_text_from_file(file_path, remove_abstract=True):
+def get_full_text_from_file(file_path, remove_abstract=True, filename=None):
     pdf_document = fitz.open('data/' + file_path)
     full_text = ""
     bold_text = []
     keywords = []
-    for page_number in range(len(pdf_document)):
+    file_link = ""
+
+    for page_number in range(1):
         # Numero de pagina - 1 que el pdf
-        page = pdf_document[page_number]
-        text, bold_text_from_page, keywords_by_page = get_text_from_page(page, remove_abstract)
+        page = pdf_document[0]
+        text, bold_text_from_page, keywords_by_page, link_by_page = get_text_from_page(page, remove_abstract, filename)
         # ctrl+shift+p: toggle word wrap para evitar scroll
-        bold_text = bold_text + bold_text_from_page
-        keywords = keywords + keywords_by_page
+        bold_text += bold_text_from_page
+        keywords += keywords_by_page
         full_text += text + ""
+        file_link += link_by_page
 
     pdf_document.close()
     # save_string_to_file(full_text, 'text1.txt')
@@ -752,11 +790,11 @@ def get_full_text_from_file(file_path, remove_abstract=True):
     full_text = clean_plain_text(full_text, bold_text)
     # save_string_to_file(full_text, 'text2.txt')
 
-    return full_text, keywords
+    return full_text, keywords, file_link
 
 # Retrieve the abstract from an article
 def get_abstract_from_file(file_path, get_title=False):
-    full_text, keywords = get_full_text_from_file(file_path, False)
+    full_text, keywords, _l = get_full_text_from_file(file_path, False)
     regex_pattern = r'Abstract([\s\S]*?)Unified Astronomy Thesaurus concepts:'
     extracted_text = ''
     match = re.search(regex_pattern, full_text)

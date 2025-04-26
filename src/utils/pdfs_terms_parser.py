@@ -1,12 +1,11 @@
 import fitz
-import re
-import json
+from InputCreators.SummarizeInputCreator import SummarizeInputCreator
 import os
 import logging
 
 from Database.File import File
 from Database.Keyword import Keyword
-from utils.articles_parser import get_abstract_from_file, get_full_text_from_file
+from utils.articles_parser import get_abstract_from_file, get_full_text_from_file, get_title_from_file
 
 PDFS_PATH = './PDFs'
 
@@ -24,6 +23,7 @@ def count_files(pdf_directory):
 def upload_data(pdf_directory, thesaurus, database):
     file_db = File(database)
     keyword_db = Keyword(database)
+    summarizeInputCreator = SummarizeInputCreator(database)
 
     root_term = thesaurus.get_by_id("1")
     root_term_children = root_term.get_children()
@@ -60,14 +60,23 @@ def upload_data(pdf_directory, thesaurus, database):
 
                 # Get the necessary information from the PDF file
                 try:
-                    full_text = get_full_text_from_file(file_path)
+                    # Get the full text from the PDF file
+                    full_text, _k, file_link = get_full_text_from_file(file_path, False, file_id)
+
+                    # Get the abstract and keywords from the PDF file
                     abstract, keywords = get_abstract_from_file(file_path, True)
+
+                    # Get title from the PDF file
+                    title = get_title_from_file(file_path)
+
+                    # Generate the summary based on the full text
+                    summary = summarizeInputCreator.summarize_text(full_text, 0.25, max_sentences=100, additional_stopwords={"specific", "unnecessary", "technical"})
                 except Exception as e:
                     log.error(f"Error processing file {filename}: {e}")
                     print("Error processing file", filename, e)
                     continue
 
-                result = file_db.add(file_id=file_id, abstract=abstract, full_text=full_text)
+                result = file_db.add(file_id=file_id, abstract=abstract, full_text=full_text, summarize=summary, title=title, link=file_link)
                 if result != False:
                     for keyword in keywords:
                         if keyword in root_term_children or keyword in root_term_grandchildren:
