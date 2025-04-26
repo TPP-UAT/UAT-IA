@@ -772,9 +772,9 @@ def get_full_text_from_file(file_path, remove_abstract=True, filename=None):
     keywords = []
     file_link = ""
 
-    for page_number in range(1):
+    for page_number in range(len(pdf_document)):
         # Numero de pagina - 1 que el pdf
-        page = pdf_document[0]
+        page = pdf_document[page_number]
         text, bold_text_from_page, keywords_by_page, link_by_page = get_text_from_page(page, remove_abstract, filename)
         # ctrl+shift+p: toggle word wrap para evitar scroll
         bold_text += bold_text_from_page
